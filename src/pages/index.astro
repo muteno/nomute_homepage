@@ -156,85 +156,624 @@ const urls = [
     "https://www.khan.co.kr/rss/rssdata/total_news.xml", // 5 경향신문
     "https://www.hankyung.com/feed/all-news",            // 6 한국경제
     "https://www.hani.co.kr/rss/",                       // 7 한겨레
-    "http://www.ohmynews.com/rss/ohmynews.xml",          // 8 오마이뉴스
-    "https://www.mk.co.kr/rss/40300001/",                // 9 매일경제
-    "https://sports.khan.co.kr/rss/k-culture",           // 10 스포츠경향 K-Culture
-    "https://sports.khan.co.kr/rss/entertainment",       // 11 스포츠경향 연예
-    "https://sports.khan.co.kr/rss/soccer",              // 12 스포츠경향 축구
-    "https://sports.khan.co.kr/rss/life",                // 13 스포츠경향 라이프
-    "https://www.newsis.com/RSS/politics.xml",           // 14 뉴시스 정치
-    "https://www.newsis.com/RSS/economy.xml",            // 15 뉴시스 경제
-    "https://www.newsis.com/RSS/society.xml",            // 16 뉴시스 사회
-    "https://www.newsis.com/RSS/international.xml",      // 17 뉴시스 국제
+    "https://www.newsis.com/RSS/politics.xml",           // 8 뉴시스 정치
+    "https://www.newsis.com/RSS/economy.xml",            // 9 뉴시스 경제
+    "https://www.newsis.com/RSS/society.xml",            // 10 뉴시스 사회
+    "https://www.newsis.com/RSS/international.xml",      // 11 뉴시스 국제
+    "https://www.mk.co.kr/rss/40300001/",                // 12 매일경제
+    "https://www.segye.com/Articles/RSSList/segye_opinion.xml", // 13 세계일보 오피니언
+    "https://sports.khan.co.kr/rss/k-culture",           // 14 스포츠경향 K-Culture
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
-const f = (i) => (results[i].status === "fulfilled" && results[i].value) ? results[i].value : null;
 
-const yPol = f(0);  const yEco = f(1);  const ySoc = f(2);  const yInt = f(3);
-const donga = f(4);  const khan = f(5);  const hankyung = f(6);
-const hani = f(7);   const ohmy = f(8);  const mk = f(9);
-const skK = f(10);   const skE = f(11);  const skS = f(12);  const skL = f(13);
-const nPol = f(14);  const nEco = f(15);  const nSoc = f(16);  const nInt = f(17);
-
-// 카드 헬퍼
-const YNA = (badge, data) => ({ data, source: "연합뉴스", badge, bg: "#0ffd02", text: "#000", grad: "linear-gradient(135deg, #1f251f, #0a0e0a)" });
-const NEWSIS = (badge, data) => ({ data, source: "뉴시스", badge, bg: "#0ffd02", text: "#000", grad: "linear-gradient(135deg, #1f251f, #0a0e0a)" });
-const R = (source, data) => ({ data, source, badge: "RIGHT", bg: "#FF3B3B", text: "#fff", grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)" });
-const L = (source, data) => ({ data, source, badge: "LEFT", bg: "#3B7BFF", text: "#fff", grad: "linear-gradient(135deg, #0f182a, #0a0e0a)" });
-const C = (data) => ({ data, source: "스포츠경향", badge: "문화", bg: "#0ffd02", text: "#000", grad: "linear-gradient(135deg, #1f251f, #0a0e0a)" });
-
-const BATCH_SIZE = 12;
-const MAX_BATCH = 6;
+const yonhapPol =
+    results[0].status === "fulfilled" && results[0].value
+        ? results[0].value
+        : null;
+const yonhapEco =
+    results[1].status === "fulfilled" && results[1].value
+        ? results[1].value
+        : null;
+const yonhapSoc =
+    results[2].status === "fulfilled" && results[2].value
+        ? results[2].value
+        : null;
+const yonhapInt =
+    results[3].status === "fulfilled" && results[3].value
+        ? results[3].value
+        : null;
+const donga =
+    results[4].status === "fulfilled" && results[4].value
+        ? results[4].value
+        : null;
+const khan =
+    results[5].status === "fulfilled" && results[5].value
+        ? results[5].value
+        : null;
+const hankyung =
+    results[6].status === "fulfilled" && results[6].value
+        ? results[6].value
+        : null;
+const hani =
+    results[7].status === "fulfilled" && results[7].value
+        ? results[7].value
+        : null;
+const newsisPol =
+    results[8].status === "fulfilled" && results[8].value
+        ? results[8].value
+        : null;
+const newsisEco =
+    results[9].status === "fulfilled" && results[9].value
+        ? results[9].value
+        : null;
+const newsisSoc =
+    results[10].status === "fulfilled" && results[10].value
+        ? results[10].value
+        : null;
+const newsisInt =
+    results[11].status === "fulfilled" && results[11].value
+        ? results[11].value
+        : null;
+const mk =
+    results[12].status === "fulfilled" && results[12].value
+        ? results[12].value
+        : null;
+const segye =
+    results[13].status === "fulfilled" && results[13].value
+        ? results[13].value
+        : null;
+const skK =
+    results[14].status === "fulfilled" && results[14].value
+        ? results[14].value
+        : null;
 
 const feedsConfig = [
-    // ===== BATCH 1 (초기 표시) =====
-    YNA("정치", yPol?.[0]),  YNA("경제", yEco?.[0]),
-    YNA("사회", ySoc?.[0]),  YNA("국제", yInt?.[0]),
-    YNA("국제", yInt?.[1]),  YNA("국제", yInt?.[2]),
-    R("동아일보", donga?.[0]),   L("경향신문", khan?.[0]),
-    R("한국경제", hankyung?.[0]), L("한겨레", hani?.[0]),
-    R("동아일보", donga?.[1]),   L("오마이뉴스", ohmy?.[0]),
+    // --- BATCH 1 (Cards 1-11) ---
+    {
+        batch: 1,
+        data: yonhapPol ? yonhapPol[0] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: yonhapEco ? yonhapEco[0] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: yonhapSoc ? yonhapSoc[0] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: yonhapInt ? yonhapInt[0] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: yonhapInt ? yonhapInt[1] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
 
-    // ===== BATCH 2 =====
-    YNA("정치", yPol?.[1]),  YNA("경제", yEco?.[1]),
-    YNA("사회", ySoc?.[1]),  YNA("국제", yInt?.[3]),
-    YNA("국제", yInt?.[4]),  YNA("국제", yInt?.[5]),
-    R("동아일보", donga?.[2]),   L("경향신문", khan?.[1]),
-    R("한국경제", hankyung?.[1]), L("한겨레", hani?.[1]),
-    R("동아일보", donga?.[3]),   L("오마이뉴스", ohmy?.[1]),
+    {
+        batch: 1,
+        data: donga ? donga[0] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: khan ? khan[0] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: hankyung ? hankyung[0] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: hani ? hani[0] : null,
+        source: "한겨레",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 1,
+        data: donga ? donga[1] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
 
-    // ===== BATCH 3 =====
-    YNA("정치", yPol?.[2]),  YNA("경제", yEco?.[2]),
-    YNA("사회", ySoc?.[2]),  YNA("국제", yInt?.[6]),
-    YNA("국제", yInt?.[7]),  YNA("국제", yInt?.[8]),
-    R("동아일보", donga?.[4]),   L("경향신문", khan?.[2]),
-    R("한국경제", hankyung?.[2]), L("한겨레", hani?.[2]),
-    R("매일경제", mk?.[0]),      C(skE?.[0]),  // 스포츠경향 연예
+    // --- BATCH 2 (Cards 12-22) ---
+    {
+        batch: 2,
+        data: yonhapPol ? yonhapPol[1] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: yonhapEco ? yonhapEco[1] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: yonhapSoc ? yonhapSoc[1] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: yonhapInt ? yonhapInt[2] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: yonhapInt ? yonhapInt[3] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
 
-    // ===== BATCH 4 =====
-    YNA("정치", yPol?.[3]),  YNA("경제", yEco?.[3]),
-    YNA("사회", ySoc?.[3]),  YNA("국제", yInt?.[9]),
-    YNA("국제", yInt?.[10]), YNA("국제", yInt?.[11]),
-    C(skL?.[0]),                 L("경향신문", khan?.[3]),  // 스포츠경향 라이프
-    R("한국경제", hankyung?.[3]), C(skK?.[0]),               // 스포츠경향 K-Culture
-    R("동아일보", donga?.[5]),   L("오마이뉴스", ohmy?.[2]),
+    {
+        batch: 2,
+        data: donga ? donga[2] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: khan ? khan[1] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: hankyung ? hankyung[1] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: hani ? hani[1] : null,
+        source: "한겨레",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 2,
+        data: donga ? donga[3] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
 
-    // ===== BATCH 5 =====
-    YNA("정치", yPol?.[4]),  YNA("경제", yEco?.[4]),
-    YNA("사회", ySoc?.[4]),  YNA("국제", yInt?.[12]),
-    YNA("국제", yInt?.[13]), YNA("국제", yInt?.[14]),
-    R("매일경제", mk?.[1]),      L("경향신문", khan?.[4]),
-    R("한국경제", hankyung?.[4]), L("한겨레", hani?.[3]),
-    C(skK?.[1]),                 C(skE?.[1]),  // K-Culture, 연예
+    // --- BATCH 3 (Cards 23-33) ---
+    {
+        batch: 3,
+        data: yonhapPol ? yonhapPol[2] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapEco ? yonhapEco[2] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapSoc ? yonhapSoc[2] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapInt ? yonhapInt[4] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapInt ? yonhapInt[5] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
 
-    // ===== BATCH 6 (뉴시스) =====
-    NEWSIS("정치", nPol?.[0]),  NEWSIS("경제", nEco?.[0]),
-    NEWSIS("사회", nSoc?.[0]),  NEWSIS("국제", nInt?.[0]),
-    NEWSIS("국제", nInt?.[1]),  NEWSIS("국제", nInt?.[2]),
-    R("매일경제", mk?.[2]),      L("경향신문", khan?.[5]),
-    R("동아일보", donga?.[6]),   L("한겨레", hani?.[4]),
-    C(skS?.[0]),                 C(skL?.[1]),  // 축구, 라이프
+    {
+        batch: 3,
+        data: donga ? donga[4] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: khan ? khan[2] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: hankyung ? hankyung[2] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: hani ? hani[2] : null,
+        source: "한겨레",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: segye ? segye[0] : null,
+        source: "세계일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: newsisInt ? newsisInt[1] : null,
+        source: "뉴시스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: donga ? donga[5] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+
+    // --- BATCH 4 (Cards 34-43) ---
+    {
+        batch: 4,
+        data: yonhapPol ? yonhapPol[3] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: yonhapEco ? yonhapEco[3] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: yonhapSoc ? yonhapSoc[3] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: yonhapInt ? yonhapInt[6] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: yonhapInt ? yonhapInt[7] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: newsisSoc ? newsisSoc[1] : null,
+        source: "뉴시스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: khan ? khan[3] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 4,
+        data: hankyung ? hankyung[3] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: skK ? skK[0] : null,
+        source: "스포츠경향",
+        badge: "문화",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: newsisInt ? newsisInt[2] : null,
+        source: "뉴시스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+
+    // --- BATCH 5 (Cards 44-53) ---
+    {
+        batch: 5,
+        data: yonhapPol ? yonhapPol[4] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: yonhapEco ? yonhapEco[4] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: yonhapSoc ? yonhapSoc[4] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: yonhapInt ? yonhapInt[8] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: yonhapInt ? yonhapInt[9] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: hankyung ? hankyung[5] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: khan ? khan[4] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: hankyung ? hankyung[4] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: skK ? skK[1] : null,
+        source: "스포츠경향",
+        badge: "문화",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: segye ? segye[1] : null,
+        source: "세계일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: hankyung ? hankyung[6] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+
+    // --- BATCH 6 (Cards 54-61) ---
+    {
+        batch: 6,
+        data: newsisPol ? newsisPol[0] : null,
+        source: "뉴시스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newsisEco ? newsisEco[0] : null,
+        source: "뉴시스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newsisSoc ? newsisSoc[0] : null,
+        source: "뉴시스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newsisInt ? newsisInt[0] : null,
+        source: "뉴시스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: skK ? skK[2] : null,
+        source: "스포츠경향",
+        badge: "문화",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: mk ? mk[0] : null,
+        source: "매일경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
 ];
 ---
 
@@ -296,13 +835,17 @@ const feedsConfig = [
                 -webkit-tap-highlight-color: transparent;
             }
 
+            html,
+            body {
+                width: 100%;
+            }
+
             body {
                 font-family: var(--font-stack);
                 background-color: var(--bg-base);
                 color: var(--text-main);
                 line-height: 1.5;
                 -webkit-font-smoothing: antialiased;
-                overflow-x: hidden;
             }
 
             /* 1. Mobile Background Image (Default) */
@@ -362,11 +905,12 @@ const feedsConfig = [
 
             /* Header / Logo */
             #mobile-header {
-                padding: 0 24px 16px 24px;
+                padding: 16px 24px;
+                padding-top: 16px;
                 display: flex;
                 justify-content: flex-start;
-                align-items: flex-end; /* Baseline match */
-                gap: 16px;
+                align-items: center;
+                gap: 12px;
                 position: sticky;
                 top: 0;
                 z-index: 1000;
@@ -377,10 +921,10 @@ const feedsConfig = [
                 content: "";
                 position: absolute;
                 top: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 100vw;
-                height: 200%; /* Double height for smooth fade */
+                left: 0;
+                transform: none;
+                width: 100%;
+                height: 96%; /* Shortened fade */
                 background: linear-gradient(
                     180deg,
                     rgba(2, 4, 2, 0.98) 40%,
@@ -411,6 +955,7 @@ const feedsConfig = [
                 width: auto;
                 flex-shrink: 0;
                 transition: height 0.3s ease;
+                margin-top: 6px;
             }
 
             #mobile-header.scrolled .logo-img {
@@ -419,7 +964,7 @@ const feedsConfig = [
 
             .header-text-container {
                 font-family: var(--font-kr);
-                font-size: 13px;
+                font-size: 3.5vw;
                 font-weight: 700;
                 line-height: 1.4;
                 color: rgba(255, 255, 255, 0.9);
@@ -430,7 +975,6 @@ const feedsConfig = [
                     transform 0.4s ease;
                 white-space: nowrap;
                 pointer-events: none;
-                padding-bottom: 6px; /* Elevator spacing for baseline */
             }
 
             #mobile-header.scrolled .header-text-container {
@@ -443,6 +987,7 @@ const feedsConfig = [
             .hero {
                 padding: 40px 24px 30px;
                 text-align: left;
+                position: relative;
             }
             .hero h1 {
                 font-family: "LEMONMILK", sans-serif;
@@ -611,6 +1156,102 @@ const feedsConfig = [
                 opacity: 0.9;
             }
 
+            /* Floating Load More Button */
+            #floating-load-more {
+                position: fixed;
+                top: 65%;
+                left: 80%;
+                bottom: auto;
+                right: auto;
+                transform: translate(-50%, -50%);
+                margin: 0;
+                width: 72px;
+                height: 72px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.03);
+                backdrop-filter: blur(40px);
+                -webkit-backdrop-filter: blur(40px);
+                border: 1px solid rgba(255, 255, 255, 0.08);
+                color: #ffffff;
+                font-family: "Noto Sans KR", sans-serif;
+                font-weight: 700;
+                font-size: 13px;
+                line-height: 1.3;
+                text-align: center;
+                cursor: pointer;
+                z-index: 999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0;
+                transition: none;
+                box-shadow: none;
+                touch-action: manipulation;
+                -webkit-touch-callout: none;
+                user-select: none;
+                -webkit-user-select: none;
+                pointer-events: auto !important;
+                z-index: 99999;
+            }
+            #floating-load-more:active {
+                transform: scale(0.92);
+            }
+
+            #scroll-top-btn {
+                position: fixed;
+                top: 90%;
+                left: 87%;
+                transform: translate(-50%, -50%);
+                width: 48px;
+                height: 48px;
+                clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+                background: rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
+                border: none;
+                display: none;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                z-index: 999999;
+                padding-top: 16px;
+            }
+            #scroll-top-btn span {
+                color: #fff;
+                font-family: "Noto Sans KR", sans-serif;
+                font-weight: 900;
+                font-size: 9px;
+            }
+            #scroll-top-btn:active {
+                transform: translate(-50%, -50%) scale(0.92);
+            }
+
+            #scroll-progress {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                height: 2px;
+                width: 0%;
+                background: #0ffd02;
+                z-index: 1001;
+                transition: width 0.1s linear;
+                opacity: 0.5;
+            }
+
+            #hero-datetime {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                font-family: "Noto Sans KR", sans-serif;
+                font-size: 11px;
+                color: #ffffff;
+                z-index: 10;
+                transition: opacity 0.3s ease;
+            }
+            #hero-datetime .accent {
+                color: #0ffd02;
+            }
+
             /* Footer */
             footer {
                 padding: 40px 24px 60px;
@@ -636,29 +1277,10 @@ const feedsConfig = [
 
                 /* PC Background Layout Override */
                 .bg-dark-wave {
-                    background-image: none;
-                }
-
-                .pc-video-bg {
-                    display: block;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    object-fit: cover;
-                    z-index: -2;
-                }
-
-                .pc-video-overlay {
-                    display: block;
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(0, 0, 0, 0.3);
-                    z-index: -1;
+                    background-image: url("/assets/background.png");
+                    background-size: cover;
+                    background-position: center;
+                    background-attachment: fixed;
                 }
 
                 .pc-view {
@@ -735,19 +1357,8 @@ const feedsConfig = [
         </style>
     </head>
     <body>
-        <!-- 1. Background (Image for Mobile, Video for PC) -->
+        <!-- 1. Background (Image for Mobile and PC) -->
         <div class="bg-dark-wave"></div>
-        <video
-            class="pc-video-bg"
-            autoplay
-            muted
-            loop
-            playsinline
-            poster="/assets/background.png"
-        >
-            <source src="/assets/Background_영상.mp4" type="video/mp4" />
-        </video>
-        <div class="pc-video-overlay"></div>
 
         <!-- 2. PC View (>= 768px) -->
         <div class="pc-view">
@@ -794,6 +1405,8 @@ const feedsConfig = [
                             >현명한 당신을 위합니다.</span
                         >
                     </div>
+                    <div id="scroll-progress"></div>
+                    <div id="hero-datetime"></div>
                 </header>
 
                 <section class="hero">
@@ -809,15 +1422,16 @@ const feedsConfig = [
                         >
                     </p>
                     <a
-                        href="mailto:nomute.dictate754@passinbox.com"
+                        href="mailto:contact@nomute.kr"
                         style="display: block; margin-top: -12px; text-align: left; font-size: 13px; color: #BBBBBB; text-decoration: none; line-height: 1.5;"
                     >
                         <span
-                            style="font-weight: bold; text-decoration: underline;"
-                            >Contact me</span
+                            style="font-family: 'Noto Sans KR', sans-serif; font-weight: bold; text-decoration: underline;"
+                            >Contact</span
                         ><br />
-                        <span style="font-weight: normal;"
-                            >mail: nomute.dictate754@passinbox.com</span
+                        <span
+                            style="font-family: 'Noto Sans KR', sans-serif; font-weight: normal;"
+                            >Mail: <i>contact@nomute.kr</i></span
                         >
                     </a>
                 </section>
@@ -830,12 +1444,9 @@ const feedsConfig = [
                             const hasData =
                                 feed.data && feed.data.title !== "제목 없음";
                             const hasImage = hasData && feed.data.imageUrl;
-                            const batchNum = Math.floor(index / BATCH_SIZE) + 1;
-                            const isHidden = batchNum > 1;
-                            const isLastInBatch = (index + 1) % BATCH_SIZE === 0;
                             return (
                                 <>
-                                    {index === 6 && (
+                                    {index === 5 && (
                                         <div class="instagram-cta">
                                             <h2>JOIN THE MOVEMENT</h2>
                                             <p class="kor">
@@ -857,17 +1468,21 @@ const feedsConfig = [
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                             >
-                                                @no_mute 팔로우하기
+                                                @no_mute 채널 팔로우
                                             </a>
                                         </div>
                                     )}
                                     <article
-                                        class={`news-card`}
-                                        data-batch={batchNum}
-                                        style={isHidden ? "display: none;" : ""}
+                                        class="news-card"
+                                        style={
+                                            feed.batch !== 1
+                                                ? "display: none;"
+                                                : ""
+                                        }
                                         data-link={
                                             hasData ? feed.data.link : ""
                                         }
+                                        data-batch={feed.batch}
                                     >
                                         {hasImage ? (
                                             <div class="news-image">
@@ -908,14 +1523,22 @@ const feedsConfig = [
                                             </div>
                                         </div>
                                     </article>
-                                    {/* 마지막 배치(6) 끝에 팔로우 배너 */}
-                                    {isLastInBatch && batchNum === MAX_BATCH && (
-                                        <div class="instagram-cta" data-batch={MAX_BATCH} style="display: none;">
+                                    {/* 배치 2~5 마지막 카드 뒤에 팔로우 배너 자동 삽입 */}
+                                    {feed.batch >= 2 && feed.batch <= 5 &&
+                                     (index === feedsConfig.length - 1 || feedsConfig[index + 1]?.batch !== feed.batch) && (
+                                        <div
+                                            class="instagram-cta"
+                                            data-batch={feed.batch}
+                                            style="display:none;"
+                                        >
                                             <h2>JOIN THE MOVEMENT</h2>
                                             <p class="kor">
                                                 더 많은 뉴스는 Instagram
-                                                <span class="highlight" style="font-weight: 700;">
-                                                    {" "}no_mute
+                                                <span
+                                                    class="highlight"
+                                                    style="font-weight: 700;"
+                                                >
+                                                    no_mute
                                                 </span>
                                                 에서 확인하세요.
                                             </p>
@@ -934,12 +1557,34 @@ const feedsConfig = [
                         })
                     }
 
-                    <button
-                        id="load-more-btn"
-                        class="btn-instagram"
-                        style="margin-top: 10px; width: 100%; border: none; cursor: pointer; text-align: center;"
-                        >더 보기</button
-                    >
+                    <button id="scroll-top-btn" style="display:none;">
+                        <span>TOP</span>
+                    </button>
+                    <button id="floating-load-more" style="display: none;">
+                        더<br />보기
+                    </button>
+
+                    <div id="end-cta" style="display: none; margin-top: 24px;">
+                        <div class="instagram-cta">
+                            <h2>JOIN THE MOVEMENT</h2>
+                            <p class="kor">
+                                더 많은 뉴스는 Instagram
+                                <span
+                                    class="highlight"
+                                    style="font-weight: 700;">no_mute</span
+                                >
+                                에서 확인하세요.
+                            </p>
+                            <a
+                                href="https://instagram.com/no_mute"
+                                class="btn-instagram"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                @no_mute 채널 팔로우
+                            </a>
+                        </div>
+                    </div>
                 </section>
 
                 <footer>
@@ -947,11 +1592,11 @@ const feedsConfig = [
                         class="footer-logo"
                         style="font-family: 'Noto Sans KR', sans-serif; font-weight: 900;"
                     >
-                        노뮤트 매거진
+                        노뮤트
                     </div>
                     <p>ⓒ 2025-26. No_mute. All rights reserved.</p>
                     <p style="margin-top: 8px; opacity: 0.5;">
-                        Break the silence. Speak the truth.
+                        Breaking the silence. Speak the truth.
                     </p>
                 </footer>
             </div>
@@ -981,26 +1626,168 @@ const feedsConfig = [
                 );
             }
 
-            // Load More Button Logic - Progressive Batch Loading
-            const loadMoreBtn = document.getElementById("load-more-btn");
-            if (loadMoreBtn) {
-                let currentBatch = 1;
-                const maxBatch = 6;
+            const progressBar = document.getElementById("scroll-progress");
 
-                loadMoreBtn.addEventListener("click", () => {
-                    currentBatch++;
-                    // Show all elements belonging to the next batch
-                    document
-                        .querySelectorAll(`[data-batch="${currentBatch}"]`)
-                        .forEach((el) => {
-                            (el as HTMLElement).style.display = "";
-                        });
+            function updateDateTime() {
+                const el = document.getElementById("hero-datetime");
+                if (!el) return;
+                const now = new Date();
+                const year = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, "0");
+                const dd = String(now.getDate()).padStart(2, "0");
+                let hours = now.getHours();
+                const min = String(now.getMinutes()).padStart(2, "0");
+                const ampm = hours >= 12 ? "PM" : "AM";
+                hours = hours % 12 || 12;
+                const hh = String(hours).padStart(2, "0");
+                const days = ["일", "월", "화", "수", "목", "금", "토"];
+                const day = days[now.getDay()];
 
-                    // Hide button after last batch
-                    if (currentBatch >= maxBatch) {
-                        loadMoreBtn.style.display = "none";
+                el.innerHTML = `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${min}${ampm}(KST)`;
+            }
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+
+            window.addEventListener(
+                "scroll",
+                () => {
+                    const scrollTop = window.scrollY;
+                    const docHeight =
+                        document.documentElement.scrollHeight -
+                        window.innerHeight;
+
+                    // 헤더가 sticky 상태일 때만 표시 (스크롤 시작 후)
+                    if (scrollTop > 100) {
+                        const progress = (scrollTop / docHeight) * 100;
+                        if (progressBar) {
+                            progressBar.style.width =
+                                Math.min(progress, 100) + "%";
+                            progressBar.style.opacity = "0.5";
+                        }
+                    } else {
+                        if (progressBar) {
+                            progressBar.style.opacity = "0";
+                            progressBar.style.width = "0%";
+                        }
                     }
+
+                    // 상단 고정바 활성화 시점에 숨김
+                    const el = document.getElementById("hero-datetime");
+                    if (el) {
+                        // 스크롤이 내려가면 숨김, 맨 위로 올라오면 다시 표시 (0 이상의 스크롤 위치 감지)
+                        if (window.scrollY > 10) {
+                            el.style.opacity = "0";
+                        } else {
+                            el.style.opacity = "1";
+                        }
+                    }
+                },
+                { passive: true },
+            );
+
+            // Load More Button Logic (Intersection Observer)
+            const floatingBtn = document.getElementById("floating-load-more");
+            let currentBatch = 1;
+            const maxBatch = 6;
+
+            if (floatingBtn) {
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach((entry) => {
+                            if (currentBatch >= maxBatch) return; // 더 이상 로드할 게 없으면 무시
+                            if (entry.isIntersecting) {
+                                floatingBtn.style.display = "flex";
+                            } else {
+                                floatingBtn.style.display = "none";
+                            }
+                        });
+                    },
+                    { threshold: 0.3 },
+                );
+
+                function observeLastCard() {
+                    observer.disconnect();
+                    const batchBanner = document.querySelector(
+                        `.instagram-cta[data-batch="${currentBatch}"]`,
+                    );
+                    if (batchBanner) {
+                        observer.observe(batchBanner);
+                    } else {
+                        const cards = document.querySelectorAll(
+                            `[data-batch="${currentBatch}"].news-card`,
+                        );
+                        if (cards.length > 0)
+                            observer.observe(cards[cards.length - 1]);
+                    }
+                }
+
+                observeLastCard();
+
+                let isLoading = false;
+                floatingBtn.addEventListener(
+                    "pointerdown",
+                    (e) => {
+                        e.stopPropagation();
+                        if (isLoading) return;
+                        isLoading = true;
+
+                        currentBatch++;
+                        // 다음 배치의 카드와 배너를 모두 표시
+                        document
+                            .querySelectorAll(`[data-batch="${currentBatch}"]`)
+                            .forEach((el) => {
+                                (el as HTMLElement).style.display = "block";
+                            });
+                        floatingBtn.style.display = "none";
+
+                        if (currentBatch >= maxBatch) {
+                            // 마지막 batch → 배너 표시, 버튼 완전 제거
+                            observer.disconnect();
+                            const endCta = document.getElementById("end-cta");
+                            if (endCta) endCta.style.display = "block";
+                            floatingBtn.remove();
+                        } else {
+                            // 다음 batch의 마지막 카드 감시 시작
+                            observeLastCard();
+                        }
+
+                        setTimeout(() => {
+                            isLoading = false;
+                        }, 300);
+
+                        // DOM 증가에 맞춰 프로그레스바 즉시 비율 재계산
+                        const scrollTop = window.scrollY;
+                        const docHeight =
+                            document.documentElement.scrollHeight -
+                            window.innerHeight;
+                        const progress = (scrollTop / docHeight) * 100;
+                        if (progressBar) {
+                            progressBar.style.width =
+                                Math.min(progress, 100) + "%";
+                        }
+                    },
+                    { passive: false },
+                );
+            }
+
+            const topBtn = document.getElementById("scroll-top-btn");
+            if (topBtn) {
+                topBtn.addEventListener("pointerdown", (e) => {
+                    e.stopPropagation();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
                 });
+
+                window.addEventListener(
+                    "scroll",
+                    () => {
+                        if (window.scrollY > window.innerHeight) {
+                            topBtn.style.display = "flex";
+                        } else {
+                            topBtn.style.display = "none";
+                        }
+                    },
+                    { passive: true },
+                );
             }
 
             // Mobile card tap interactions and link routing
