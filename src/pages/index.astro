@@ -199,9 +199,9 @@ const ohmynews =
         : null;
 
 const feedsConfig = [
-    // --- SHOWN INITIALLY (Cards 1-11) ---
-    // 1-4. YONHAP (정치, 경제, 사회, 국제)
+    // --- BATCH 1 (Cards 1-11) ---
     {
+        batch: 1,
         data: yonhapPol ? yonhapPol[0] : null,
         source: "연합뉴스",
         badge: "정치",
@@ -210,6 +210,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
+        batch: 1,
         data: yonhapEco ? yonhapEco[0] : null,
         source: "연합뉴스",
         badge: "경제",
@@ -218,6 +219,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
+        batch: 1,
         data: yonhapSoc ? yonhapSoc[0] : null,
         source: "연합뉴스",
         badge: "사회",
@@ -226,6 +228,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
+        batch: 1,
         data: yonhapInt ? yonhapInt[0] : null,
         source: "연합뉴스",
         badge: "국제",
@@ -233,8 +236,8 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 5. YONHAP INT (2nd card)
     {
+        batch: 1,
         data: yonhapInt ? yonhapInt[1] : null,
         source: "연합뉴스",
         badge: "국제",
@@ -243,8 +246,8 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
 
-    // 6-11. Right/Left split
     {
+        batch: 1,
         data: donga ? donga[0] : null,
         source: "동아일보",
         badge: "RIGHT",
@@ -253,6 +256,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
+        batch: 1,
         data: khan ? khan[0] : null,
         source: "경향신문",
         badge: "LEFT",
@@ -261,6 +265,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
+        batch: 1,
         data: hankyung ? hankyung[0] : null,
         source: "한국경제",
         badge: "RIGHT",
@@ -269,6 +274,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
+        batch: 1,
         data: hani ? hani[0] : null,
         source: "한겨레",
         badge: "LEFT",
@@ -277,6 +283,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
+        batch: 1,
         data: donga ? donga[1] : null,
         source: "동아일보",
         badge: "RIGHT",
@@ -285,6 +292,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
+        batch: 1,
         data: ohmynews ? ohmynews[0] : null,
         source: "오마이뉴스",
         badge: "LEFT",
@@ -293,9 +301,9 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
 
-    // --- HIDDEN BEHIND "LOAD MORE" (Cards 12-22) ---
-    // 12-15. YONHAP
+    // --- BATCH 2 (Cards 12-22) ---
     {
+        batch: 2,
         data: yonhapPol ? yonhapPol[1] : null,
         source: "연합뉴스",
         badge: "정치",
@@ -304,6 +312,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
+        batch: 2,
         data: yonhapEco ? yonhapEco[1] : null,
         source: "연합뉴스",
         badge: "경제",
@@ -312,6 +321,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
+        batch: 2,
         data: yonhapSoc ? yonhapSoc[1] : null,
         source: "연합뉴스",
         badge: "사회",
@@ -320,6 +330,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
+        batch: 2,
         data: yonhapInt ? yonhapInt[2] : null,
         source: "연합뉴스",
         badge: "국제",
@@ -327,8 +338,8 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 16. YONHAP INT (4th card total, but using 3rd index [3])
     {
+        batch: 2,
         data: yonhapInt ? yonhapInt[3] : null,
         source: "연합뉴스",
         badge: "국제",
@@ -337,8 +348,8 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
 
-    // 17-22. Right/Left split
     {
+        batch: 2,
         data: donga ? donga[2] : null,
         source: "동아일보",
         badge: "RIGHT",
@@ -347,6 +358,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
+        batch: 2,
         data: khan ? khan[1] : null,
         source: "경향신문",
         badge: "LEFT",
@@ -355,6 +367,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
+        batch: 2,
         data: hankyung ? hankyung[1] : null,
         source: "한국경제",
         badge: "RIGHT",
@@ -363,6 +376,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
+        batch: 2,
         data: hani ? hani[1] : null,
         source: "한겨레",
         badge: "LEFT",
@@ -371,6 +385,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
+        batch: 2,
         data: donga ? donga[3] : null,
         source: "동아일보",
         badge: "RIGHT",
@@ -379,7 +394,110 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
+        batch: 2,
         data: ohmynews ? ohmynews[1] : null,
+        source: "오마이뉴스",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+
+    // --- BATCH 3 (Cards 23-33) ---
+    {
+        batch: 3,
+        data: yonhapPol ? yonhapPol[2] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapEco ? yonhapEco[2] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapSoc ? yonhapSoc[2] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapInt ? yonhapInt[4] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: yonhapInt ? yonhapInt[5] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+
+    {
+        batch: 3,
+        data: donga ? donga[4] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: khan ? khan[2] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: hankyung ? hankyung[2] : null,
+        source: "한국경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: hani ? hani[2] : null,
+        source: "한겨레",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: donga ? donga[5] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 3,
+        data: ohmynews ? ohmynews[2] : null,
         source: "오마이뉴스",
         badge: "LEFT",
         bg: "#3B7BFF",
@@ -514,6 +632,7 @@ const feedsConfig = [
             /* Header / Logo */
             #mobile-header {
                 padding: 16px 24px;
+                padding-top: 16px;
                 display: flex;
                 justify-content: flex-start;
                 align-items: flex-end; /* Baseline match */
@@ -982,7 +1101,6 @@ const feedsConfig = [
                             const hasData =
                                 feed.data && feed.data.title !== "제목 없음";
                             const hasImage = hasData && feed.data.imageUrl;
-                            const isHidden = index >= 11;
                             return (
                                 <>
                                     {index === 5 && (
@@ -1012,11 +1130,16 @@ const feedsConfig = [
                                         </div>
                                     )}
                                     <article
-                                        class={`news-card ${isHidden ? "hidden-card" : ""}`}
-                                        style={isHidden ? "display: none;" : ""}
+                                        class="news-card"
+                                        style={
+                                            feed.batch !== 1
+                                                ? "display: none;"
+                                                : ""
+                                        }
                                         data-link={
                                             hasData ? feed.data.link : ""
                                         }
+                                        data-batch={feed.batch}
                                     >
                                         {hasImage ? (
                                             <div class="news-image">
@@ -1112,15 +1235,19 @@ const feedsConfig = [
             // Load More Button Logic
             const loadMoreBtn = document.getElementById("load-more-btn");
             if (loadMoreBtn) {
+                let currentBatch = 1;
                 loadMoreBtn.addEventListener("click", () => {
+                    currentBatch++;
                     document
-                        .querySelectorAll(".hidden-card")
+                        .querySelectorAll(
+                            `.news-card[data-batch="${currentBatch}"]`,
+                        )
                         .forEach((card) => {
                             (card as HTMLElement).style.display = "block";
-                            // trigger reflow to apply css transition gracefully if any
-                            card.classList.remove("hidden-card");
                         });
-                    loadMoreBtn.style.display = "none";
+                    if (currentBatch >= 3) {
+                        loadMoreBtn.style.display = "none";
+                    }
                 });
             }
 
