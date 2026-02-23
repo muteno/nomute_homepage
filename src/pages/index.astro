@@ -41,7 +41,7 @@
             }
 
             :root {
-                --bg-base: #020402; /* Extremely dark green/black base */
+                --bg-base: #020402;
                 --accent-green: #0ffd02;
                 --text-main: #ffffff;
                 --text-muted: #aaaaaa;
@@ -68,7 +68,7 @@
                 overflow-x: hidden;
             }
 
-            /* 1. CSS-Only Dark Green Abstract Wave Background */
+            /* 1. Background Image */
             .bg-dark-wave {
                 position: fixed;
                 top: 0;
@@ -76,92 +76,11 @@
                 right: 0;
                 bottom: 0;
                 z-index: -1;
-                background: var(--bg-base);
-                overflow: hidden;
-            }
-
-            .bg-dark-wave::before {
-                content: "";
-                position: absolute;
-                width: 200vw;
-                height: 150vh;
-                top: -25vh;
-                left: -50vw;
-                background:
-                    radial-gradient(
-                        ellipse at 30% 60%,
-                        rgba(15, 253, 2, 0.08) 0%,
-                        transparent 45%
-                    ),
-                    radial-gradient(
-                        ellipse at 80% 30%,
-                        rgba(15, 253, 2, 0.05) 0%,
-                        transparent 40%
-                    ),
-                    radial-gradient(
-                        circle at 50% 10%,
-                        rgba(20, 25, 20, 0.8) 0%,
-                        transparent 60%
-                    );
-                filter: blur(80px);
-                opacity: 0.8;
-                animation: drift 20s infinite alternate ease-in-out;
-                transform-origin: center;
-            }
-
-            /* Create sweeping wave layers with pseudo elements */
-            .wave-layer {
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                opacity: 0.15;
-                background: radial-gradient(
-                    150% 100% at 50% 0%,
-                    transparent 40%,
-                    rgba(15, 253, 2, 0.1) 80%,
-                    #000 100%
-                );
-                transform: skewY(-15deg) scaleY(1.5);
-                z-index: -1;
-            }
-
-            .wave-layer:nth-child(2) {
-                opacity: 0.1;
-                transform: skewY(10deg) scaleY(1.2) translateY(20%);
-                background: radial-gradient(
-                    120% 100% at 0% 100%,
-                    transparent 30%,
-                    rgba(15, 253, 2, 0.15) 80%,
-                    #000 100%
-                );
-            }
-
-            .bg-dark-wave::after {
-                content: "";
-                position: absolute;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
-                background: linear-gradient(
-                    180deg,
-                    rgba(0, 0, 0, 0.4) 0%,
-                    rgba(0, 0, 0, 0.95) 100%
-                );
-            }
-
-            @keyframes drift {
-                0% {
-                    transform: rotate(-2deg) scale(1) translate(0, 0);
-                }
-                50% {
-                    transform: rotate(1deg) scale(1.05) translate(2vw, 2vh);
-                }
-                100% {
-                    transform: rotate(3deg) scale(1.1) translate(-1vw, -1vh);
-                }
+                background-color: var(--bg-base);
+                background-image: url("/assets/background.png");
+                background-size: cover;
+                background-attachment: fixed;
+                background-position: center;
             }
 
             .highlight {
@@ -232,7 +151,7 @@
             .hero p.sub-copy {
                 font-family: var(--font-kr);
                 font-size: 16px;
-                font-weight: 400;
+                font-weight: 700;
                 color: rgba(255, 255, 255, 0.85);
                 letter-spacing: -0.5px;
                 word-break: keep-all;
@@ -315,6 +234,14 @@
                 justify-content: space-between;
             }
 
+            .no-ads-notice {
+                font-family: var(--font-kr);
+                font-size: 12px;
+                color: #888888;
+                text-align: center;
+                margin-top: 16px;
+            }
+
             /* Instagram CTA */
             .instagram-cta {
                 margin: 20px 24px 60px;
@@ -372,9 +299,6 @@
                 font-size: 18px;
                 font-family: "LEMONMILK", sans-serif;
                 margin-bottom: 12px;
-            }
-            .footer-logo span {
-                color: var(--accent-green);
             }
 
             /* ======== PC STYLES ======== */
@@ -450,7 +374,6 @@
                     height: 200px;
                     border-radius: 12px;
                     object-fit: contain;
-                    /* Add a subtle green glow matching the vibe */
                     box-shadow: 0 0 20px rgba(15, 253, 2, 0.15);
                 }
             }
@@ -458,30 +381,23 @@
     </head>
     <body>
         <!-- 1. Background -->
-        <div class="bg-dark-wave">
-            <div class="wave-layer"></div>
-            <div class="wave-layer"></div>
-        </div>
+        <div class="bg-dark-wave"></div>
 
         <!-- 2. PC View (>= 768px) -->
         <div class="pc-view">
-            <!-- 2.1 Main Copy -->
             <h1 class="pc-main-copy">
                 THE <span class="highlight">VOICE</span> OF<br />
                 THE <span class="highlight">UNHEARD</span>.
             </h1>
 
-            <!-- 2.2 Logo -->
             <div class="pc-logo-container">
                 <img src="/assets/logo.png" alt="No Mute Logo" />
             </div>
 
-            <!-- 2.3 Sub Copy -->
             <p class="pc-sub-copy kor">
                 불편한 진실을 대면할 현명한 당신을 위합니다.
             </p>
 
-            <!-- 2.4 Glassmorphism QR Box -->
             <div class="pc-glass-box">
                 <p class="pc-glass-text kor">
                     본 사이트는 모바일 환경에 최적화된 공간입니다.<br />아래
@@ -508,11 +424,14 @@
 
                 <section class="hero">
                     <h1>
-                        THE <span class="highlight">VOICE</span><br />OF THE<br
-                        /><span class="highlight">UNHEARD</span>.
+                        <span class="highlight">Breaking</span><br />The
+                        Silence.<br />Speak the <span class="highlight"
+                            >Truth</span
+                        >.
                     </h1>
-                    <p class="sub-copy">
-                        불편한 진실을 대면할 현명한 당신을 위합니다.
+                    <p class="sub-copy kor">
+                        불편한 진실을 대면할 <span class="highlight"
+                            >현명한 당신을 위합니다.</span>
                     </p>
                 </section>
 
@@ -563,13 +482,19 @@
                             </div>
                         </div>
                     </article>
+
+                    <div class="no-ads-notice kor">
+                        본 매거진은 현재 광고를 진행하고 있지 않습니다.
+                    </div>
                 </section>
 
                 <section class="instagram-cta">
                     <h2>JOIN THE MOVEMENT</h2>
                     <p class="kor">
-                        Instagram에서 NO MUTE의 독점 스토리와 가장 빠른 최신
-                        이슈 업데이트를 확인하세요.
+                        Instagram에서 <span
+                            class="highlight"
+                            style="font-weight: 700;">no_mute</span
+                        >가 전하는<br />가장 빠른 이슈 업데이트를 확인하세요.
                     </p>
                     <a
                         href="https://instagram.com/no_mute"
@@ -580,8 +505,10 @@
                 </section>
 
                 <footer>
-                    <div class="footer-logo"><span>NO</span> MUTE NEWS</div>
-                    <p>&copy; 2026 No Mute Media. All rights reserved.</p>
+                    <div class="footer-logo">
+                        <span class="highlight">No_mute</span> Magazine
+                    </div>
+                    <p>ⓒ 2025-26. No_mute. All rights reserved.</p>
                     <p style="margin-top: 8px; opacity: 0.5;">
                         Break the silence. Speak the truth.
                     </p>
