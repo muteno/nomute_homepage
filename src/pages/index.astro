@@ -1,5 +1,254 @@
 ---
 // src/pages/index.astro
+
+// Helper to clean extracted text
+function cleanStr(str) {
+    if (!str) return "";
+    let s = str.replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/gi, "$1").trim();
+    return s
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+}
+
+// 빌드 시점 fetch Timeout
+async function fetchWithTimeout(url, timeoutMs) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        return response;
+    } catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+
+// 원본 링크에서 og:image 파싱 (서버사이드)
+async function fetchOgImage(linkUrl) {
+    if (!linkUrl || linkUrl === "#") return null;
+    try {
+        const res = await fetchWithTimeout(linkUrl, 3000); // 3s timeout
+        if (!res.ok) return null;
+        const text = await res.text();
+        const ogMatch =
+            text.match(
+                /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+            ) ||
+            text.match(
+                /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i,
+            );
+        if (ogMatch && ogMatch[1]) {
+            return ogMatch[1].replace(/&amp;/g, "&");
+        }
+    } catch (e) {}
+    return null;
+}
+
+// 서버사이드 RSS 피드 가져오기
+async function fetchRSS(url) {
+    try {
+        const res = await fetchWithTimeout(url, 5000); // 5s timeout
+        if (!res.ok) throw new Error("Fetch failed");
+        const xml = await res.text();
+
+        const items = [];
+        const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
+        let match;
+        while ((match = itemRegex.exec(xml)) !== null) {
+            const itemContent = match[1];
+
+            const titleMatch = itemContent.match(
+                /<title[^>]*>([\s\S]*?)<\/title>/i,
+            );
+            const linkMatch = itemContent.match(
+                /<link[^>]*>([\s\S]*?)<\/link>/i,
+            );
+            const pubDateMatch =
+                itemContent.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i) ||
+                itemContent.match(/<dc:date[^>]*>([\s\S]*?)<\/dc:date>/i);
+
+            let imageUrl = null;
+
+            // 1. enclosure
+            if (!imageUrl) {
+                const encMatch = itemContent.match(
+                    /<enclosure[^>]*url=["']([^"']+)["']/i,
+                );
+                if (encMatch) imageUrl = encMatch[1];
+            }
+            // 2. media:content
+            if (!imageUrl) {
+                const mcMatch = itemContent.match(
+                    /<media:content[^>]*url=["']([^"']+)["']/i,
+                );
+                if (mcMatch) imageUrl = mcMatch[1];
+            }
+            // 3. media:thumbnail
+            if (!imageUrl) {
+                const mtMatch = itemContent.match(
+                    /<media:thumbnail[^>]*url=["']([^"']+)["']/i,
+                );
+                if (mtMatch) imageUrl = mtMatch[1];
+            }
+            // 4. description / content:encoded img 파싱
+            if (!imageUrl) {
+                const descMatch = itemContent.match(
+                    /<(?:description|content:encoded)[^>]*>([\s\S]*?)<\/(?:description|content:encoded)>/i,
+                );
+                if (descMatch) {
+                    const imgMatch = descMatch[1].match(
+                        /<img[^>]+src=["']([^"']+)["']/i,
+                    );
+                    if (imgMatch) imageUrl = imgMatch[1];
+                }
+            }
+
+            const link = linkMatch ? cleanStr(linkMatch[1]) : "#";
+
+            items.push({
+                title: titleMatch ? cleanStr(titleMatch[1]) : "제목 없음",
+                link: link,
+                pubDate: pubDateMatch
+                    ? cleanStr(pubDateMatch[1])
+                    : new Date().toISOString(),
+                imageUrl: imageUrl || null,
+            });
+        }
+
+        // 5. og:image fallback execution
+        for (let item of items) {
+            if (!item.imageUrl && item.link !== "#") {
+                item.imageUrl = await fetchOgImage(item.link);
+            }
+        }
+
+        return items.length > 0 ? items : null;
+    } catch (error) {
+        console.error("RSS Fetch Error for", url, error.message);
+        return null;
+    }
+}
+
+// 시간 계산 (정적 HTML 빌드 시점에 고정)
+function formatTimeAgo(dateString) {
+    const pubDate = new Date(dateString);
+    const now = new Date();
+    if (isNaN(pubDate.getTime())) return "-";
+    const diffMs = now.getTime() - pubDate.getTime();
+    const minutes = Math.max(0, Math.floor(diffMs / 60000));
+
+    if (minutes < 60) return "방금 전";
+    if (minutes < 1440) return Math.floor(minutes / 60) + "시간 전";
+    return Math.floor(minutes / 1440) + "일 전";
+}
+
+// 빌드 시점에 모든 피드 병렬 로드
+const urls = [
+    "https://www.yna.co.kr/rss/news.xml",
+    "https://feeds.bbci.co.uk/news/rss.xml",
+    "https://news.google.com/rss?hl=en&gl=US&ceid=US:en",
+    "https://www3.nhk.or.jp/nhkworld/en/news/rss.xml", // 변경된 NHK 엔드포인트
+    "https://rss.donga.com/total.xml",
+    "https://www.khan.co.kr/rss/rssdata/total_news.xml",
+];
+
+const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
+
+const yonhap =
+    results[0].status === "fulfilled" && results[0].value
+        ? results[0].value
+        : null;
+const bbc =
+    results[1].status === "fulfilled" && results[1].value
+        ? results[1].value
+        : null;
+const google =
+    results[2].status === "fulfilled" && results[2].value
+        ? results[2].value
+        : null;
+const nhk =
+    results[3].status === "fulfilled" && results[3].value
+        ? results[3].value
+        : null;
+const donga =
+    results[4].status === "fulfilled" && results[4].value
+        ? results[4].value
+        : null;
+const khan =
+    results[5].status === "fulfilled" && results[5].value
+        ? results[5].value
+        : null;
+
+const feedsConfig = [
+    {
+        data: yonhap ? yonhap[0] : null,
+        source: "연합뉴스",
+        badge: "BREAKING",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        data: yonhap ? yonhap[1] : null,
+        source: "연합뉴스",
+        badge: "BREAKING",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        data: yonhap ? yonhap[2] : null,
+        source: "연합뉴스",
+        badge: "BREAKING",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        data: bbc ? bbc[0] : null,
+        source: "BBC",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #222, #0a0e0a)",
+    },
+    {
+        data: google ? google[0] : null,
+        source: "Google News",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+    },
+    {
+        data: nhk ? nhk[0] : null,
+        source: "NHK World",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #333, #0a0e0a)",
+    },
+    {
+        data: donga ? donga[0] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: khan ? khan[0] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+];
 ---
 
 <!doctype html>
@@ -117,11 +366,12 @@
             }
 
             /* Header / Logo */
-            header {
-                padding: 24px 24px;
+            #mobile-header {
+                padding: 16px 24px;
                 display: flex;
-                justify-content: space-between;
+                justify-content: flex-start;
                 align-items: center;
+                gap: 16px;
                 position: sticky;
                 top: 0;
                 z-index: 100;
@@ -130,10 +380,52 @@
                     rgba(2, 4, 2, 0.9) 0%,
                     transparent 100%
                 );
+                transition:
+                    background 0.3s ease,
+                    backdrop-filter 0.3s ease,
+                    -webkit-backdrop-filter 0.3s ease;
             }
+
+            #mobile-header.scrolled {
+                background: linear-gradient(
+                    180deg,
+                    rgba(0, 0, 0, 0.85) 75%,
+                    transparent 100%
+                );
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+            }
+
             .logo-img {
-                height: 84px;
+                height: 64px;
                 width: auto;
+                flex-shrink: 0;
+                transition: height 0.3s ease;
+            }
+
+            #mobile-header.scrolled .logo-img {
+                height: 52px;
+            }
+
+            .header-text-container {
+                font-family: var(--font-kr);
+                font-size: 13px;
+                font-weight: 700;
+                line-height: 1.4;
+                color: rgba(255, 255, 255, 0.9);
+                opacity: 0;
+                transform: translateX(-10px);
+                transition:
+                    opacity 0.4s ease,
+                    transform 0.4s ease;
+                white-space: nowrap;
+                pointer-events: none;
+            }
+
+            #mobile-header.scrolled .header-text-container {
+                opacity: 1;
+                transform: translateX(0);
+                pointer-events: auto;
             }
 
             /* Hero */
@@ -223,8 +515,10 @@
             }
             .news-badge {
                 position: absolute;
-                top: 16px;
-                left: 16px;
+                bottom: 0;
+                left: 20px;
+                transform: translateY(50%);
+                z-index: 10;
                 background-color: var(--accent-green);
                 color: #000;
                 padding: 4px 10px;
@@ -234,7 +528,7 @@
                 text-transform: uppercase;
             }
             .news-content {
-                padding: 20px;
+                padding: 28px 20px 20px 20px;
             }
             .news-title {
                 font-family: var(--font-kr);
@@ -439,12 +733,16 @@
         <!-- 3. Mobile View (< 768px) -->
         <div class="mobile-view">
             <div class="mobile-container">
-                <header>
+                <header id="mobile-header">
                     <img
                         src="/assets/logo.png"
                         alt="No Mute"
                         class="logo-img"
                     />
+                    <div class="header-text-container">
+                        불편한 진실을 대면할<br />
+                        <span class="highlight">현명한 당신을 위합니다.</span>
+                    </div>
                 </header>
 
                 <section class="hero">
@@ -476,201 +774,58 @@
                 <section class="latest-news">
                     <h2 class="section-title">LATEST DROPS</h2>
 
-                    <!-- Card 1: BREAKING -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div class="news-badge">BREAKING</div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">
-                                무언의 반란: 언더그라운드 크리에이터들이 주류를
-                                장악하는 방법
-                            </h3>
-                            <div class="news-meta">
-                                <span>연합뉴스</span>
-                                <span class="news-time" data-minutes="0"
-                                    >방금 전</span
+                    {
+                        feedsConfig.map((feed) => {
+                            const hasData =
+                                feed.data && feed.data.title !== "제목 없음";
+                            const hasImage = hasData && feed.data.imageUrl;
+                            return (
+                                <article
+                                    class="news-card"
+                                    data-link={hasData ? feed.data.link : ""}
                                 >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 2: BREAKING -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div class="news-badge">BREAKING</div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">
-                                새로운 규제 법안 발의, 미디어 검열 논란 확대
-                            </h3>
-                            <div class="news-meta">
-                                <span>연합뉴스</span>
-                                <span class="news-time" data-minutes="10"
-                                    >방금 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 3: BREAKING -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div class="news-badge">BREAKING</div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">
-                                글로벌 네트워크 보안 사고 발생, 업계 비상
-                            </h3>
-                            <div class="news-meta">
-                                <span>연합뉴스</span>
-                                <span class="news-time" data-minutes="60"
-                                    >1시간 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 4: BBC News -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div
-                                class="news-badge"
-                                style="background-color: #fff; color: #000;"
-                            >
-                                WORLD
-                            </div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #222, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">BBC 주요 속보</h3>
-                            <div class="news-meta">
-                                <span>BBC</span>
-                                <span class="news-time" data-minutes="60"
-                                    >1시간 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 5: Google News -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div
-                                class="news-badge"
-                                style="background-color: #fff; color: #000;"
-                            >
-                                WORLD
-                            </div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #111, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">Google News 탑 뉴스</h3>
-                            <div class="news-meta">
-                                <span>Google News</span>
-                                <span class="news-time" data-minutes="120"
-                                    >2시간 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 6: NHK World -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div
-                                class="news-badge"
-                                style="background-color: #fff; color: #000;"
-                            >
-                                WORLD
-                            </div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #333, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">NHK 글로벌 뉴스</h3>
-                            <div class="news-meta">
-                                <span>NHK World</span>
-                                <span class="news-time" data-minutes="120"
-                                    >2시간 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 7: RIGHT -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div
-                                class="news-badge"
-                                style="background-color: #FF3B3B; color: #fff;"
-                            >
-                                RIGHT
-                            </div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #2a0f0f, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">
-                                정부 정책 방향성에 대한 보수 진영의 시각
-                            </h3>
-                            <div class="news-meta">
-                                <span>동아일보</span>
-                                <span class="news-time" data-minutes="90"
-                                    >1시간 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
-
-                    <!-- Card 8: LEFT -->
-                    <article class="news-card">
-                        <div class="news-image">
-                            <div
-                                class="news-badge"
-                                style="background-color: #3B7BFF; color: #fff;"
-                            >
-                                LEFT
-                            </div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #0f182a, #0a0e0a);"
-                            >
-                            </div>
-                        </div>
-                        <div class="news-content">
-                            <h3 class="news-title">
-                                시민 사회 단체들의 노동권 보장구 확대 시위
-                            </h3>
-                            <div class="news-meta">
-                                <span>경향신문</span>
-                                <span class="news-time" data-minutes="150"
-                                    >2시간 전</span
-                                >
-                            </div>
-                        </div>
-                    </article>
+                                    {hasImage ? (
+                                        <div class="news-image">
+                                            <div
+                                                class="news-badge"
+                                                style={`background-color: ${feed.bg}; color: ${feed.text};`}
+                                            >
+                                                {feed.badge}
+                                            </div>
+                                            <div
+                                                style={`width:100%; height:100%; background: url('${feed.data.imageUrl}') center/cover no-repeat, ${feed.grad};`}
+                                            />
+                                        </div>
+                                    ) : null}
+                                    <div class="news-content">
+                                        {!hasImage && (
+                                            <div
+                                                class="news-badge"
+                                                style={`background-color: ${feed.bg}; color: ${feed.text}; position: static; transform: none; display: inline-block; margin-bottom: 12px;`}
+                                            >
+                                                {feed.badge}
+                                            </div>
+                                        )}
+                                        <h3 class="news-title">
+                                            {hasData
+                                                ? feed.data.title
+                                                : "기사를 불러올 수 없습니다"}
+                                        </h3>
+                                        <div class="news-meta">
+                                            <span>{feed.source}</span>
+                                            <span class="news-time">
+                                                {hasData
+                                                    ? formatTimeAgo(
+                                                          feed.data.pubDate,
+                                                      )
+                                                    : "-"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </article>
+                            );
+                        })
+                    }
                 </section>
 
                 <section class="instagram-cta">
@@ -706,321 +861,40 @@
 
         <!-- Interactions -->
         <script>
-            // 시간 계산 유틸리티 함수
-            function formatTimeAgo(minutes) {
-                if (minutes < 60) {
-                    return "방금 전";
-                } else if (minutes < 1440) {
-                    return Math.floor(minutes / 60) + "시간 전";
-                } else {
-                    return Math.floor(minutes / 1440) + "일 전";
-                }
-            }
+            // Mobile Header Scroll Effect
+            const mobileHeader = document.getElementById("mobile-header");
+            const heroSection = document.querySelector(".hero");
 
-            // 날짜 문자열로부터 분단위 경과 시간 계산
-            function getMinutesSince(dateString) {
-                const pubDate = new Date(dateString);
-                const now = new Date();
-                if (isNaN(pubDate.getTime())) return 0;
-                const diffMs = now.getTime() - pubDate.getTime();
-                return Math.max(0, Math.floor(diffMs / 60000));
-            }
+            if (mobileHeader && heroSection) {
+                window.addEventListener(
+                    "scroll",
+                    () => {
+                        const heroBottom =
+                            heroSection.getBoundingClientRect().bottom;
+                        const headerHeight = mobileHeader.offsetHeight;
 
-            // RSS 추출 유틸
-            function getElementText(item, tagNames) {
-                for (let tag of tagNames) {
-                    const els = item.getElementsByTagName(tag);
-                    if (els.length > 0 && els[0].textContent) {
-                        return els[0].textContent.trim();
-                    }
-                }
-                return "";
-            }
-
-            // timeout fetch
-            async function fetchWithTimeout(url, timeoutMs) {
-                const controller = new AbortController();
-                const timeoutId = setTimeout(
-                    () => controller.abort(),
-                    timeoutMs,
-                );
-                try {
-                    const response = await fetch(url, {
-                        signal: controller.signal,
-                    });
-                    clearTimeout(timeoutId);
-                    return response;
-                } catch (error) {
-                    clearTimeout(timeoutId);
-                    throw error;
-                }
-            }
-
-            // 원본 링크에서 og:image 파싱 (Proxy 우회)
-            async function fetchOgImage(linkUrl) {
-                if (!linkUrl || linkUrl === "#") return null;
-                const proxy1 = "https://api.allorigins.win/raw?url=";
-                const proxy2 = "https://corsproxy.io/?";
-                let text = "";
-
-                try {
-                    const res = await fetchWithTimeout(
-                        proxy1 + encodeURIComponent(linkUrl),
-                        3000,
-                    );
-                    if (!res.ok) throw new Error("Fallback og proxy1 fail");
-                    text = await res.text();
-                } catch (e1) {
-                    try {
-                        const res2 = await fetchWithTimeout(
-                            proxy2 + encodeURIComponent(linkUrl),
-                            3000,
-                        );
-                        if (!res2.ok)
-                            throw new Error("Fallback og proxy2 fail");
-                        text = await res2.text();
-                    } catch (e2) {
-                        return null; // Both proxies failed
-                    }
-                }
-
-                // 메타태그 정규식 파싱
-                const ogMatch =
-                    text.match(
-                        /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i,
-                    ) ||
-                    text.match(
-                        /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i,
-                    );
-                if (ogMatch && ogMatch[1]) {
-                    // HTML 특수문자 디코딩 시도
-                    return ogMatch[1].replace(/&amp;/g, "&");
-                }
-                return null;
-            }
-
-            // RSS 피드 가져오기 (CORS 우회 Proxy 사용 및 Fallback 설정)
-            async function fetchRSS(url) {
-                const proxy1 = "https://api.allorigins.win/raw?url=";
-                const proxy2 = "https://corsproxy.io/?";
-                let text = "";
-
-                try {
-                    // 1순위: allorigins (3초 timeout)
-                    const response = await fetchWithTimeout(
-                        proxy1 + encodeURIComponent(url),
-                        3000,
-                    );
-                    if (!response.ok) throw new Error("Proxy 1 error");
-                    text = await response.text();
-                } catch (e1) {
-                    // 2순위: corsproxy (3초 timeout)
-                    try {
-                        const response = await fetchWithTimeout(
-                            proxy2 + encodeURIComponent(url),
-                            3000,
-                        );
-                        if (!response.ok) throw new Error("Proxy 2 error");
-                        text = await response.text();
-                    } catch (e2) {
-                        console.error("All proxies failed for RSS:", url);
-                        return [];
-                    }
-                }
-
-                try {
-                    const parser = new DOMParser();
-                    const xml = parser.parseFromString(text, "text/xml");
-
-                    const items = Array.from(xml.getElementsByTagName("item"));
-
-                    // RSS 내부 파싱 우선
-                    const parsedItems = items.map((item) => {
-                        let imageUrl = null;
-
-                        // 1. enclosure 추출
-                        if (!imageUrl) {
-                            const enclosure =
-                                item.getElementsByTagName("enclosure")[0];
-                            if (enclosure && enclosure.getAttribute("url")) {
-                                imageUrl = enclosure.getAttribute("url");
-                            }
-                        }
-
-                        // 2. media:content 추출
-                        if (!imageUrl) {
-                            const mediaContents =
-                                item.getElementsByTagName("media:content");
-                            if (
-                                mediaContents.length > 0 &&
-                                mediaContents[0].getAttribute("url")
-                            ) {
-                                imageUrl = mediaContents[0].getAttribute("url");
-                            }
-                        }
-
-                        // 3. media:thumbnail 추출
-                        if (!imageUrl) {
-                            const mediaThumbs =
-                                item.getElementsByTagName("media:thumbnail");
-                            if (
-                                mediaThumbs.length > 0 &&
-                                mediaThumbs[0].getAttribute("url")
-                            ) {
-                                imageUrl = mediaThumbs[0].getAttribute("url");
-                            }
-                        }
-
-                        // 4. description 또는 content:encoded 파싱
-                        if (!imageUrl) {
-                            const desc = getElementText(item, [
-                                "description",
-                                "content:encoded",
-                            ]);
-                            const imgMatch = desc.match(
-                                /<img[^>]+src=["']([^"']+)["']/i,
-                            );
-                            if (imgMatch && imgMatch[1]) {
-                                imageUrl = imgMatch[1];
-                            }
-                        }
-
-                        return {
-                            title:
-                                getElementText(item, ["title"]) || "제목 없음",
-                            link: getElementText(item, ["link"]) || "#",
-                            pubDate:
-                                getElementText(item, ["pubDate", "dc:date"]) ||
-                                new Date().toISOString(),
-                            imageUrl: imageUrl,
-                        };
-                    });
-
-                    // 5. 이미지가 없으면 og:image 비동기 fetch 시도 (순차적이되 await로 대기)
-                    for (let item of parsedItems) {
-                        if (!item.imageUrl && item.link !== "#") {
-                            item.imageUrl = await fetchOgImage(item.link);
-                        }
-                    }
-
-                    return parsedItems;
-                } catch (error) {
-                    console.error("Error parsing RSS:", error);
-                    return [];
-                }
-            }
-
-            // 메인 로드 함수
-            async function loadRSS() {
-                const cards = document.querySelectorAll(".news-card");
-
-                // 로딩 스켈레톤 상태 적용
-                cards.forEach((card) => card.classList.add("loading-skeleton"));
-
-                const yonhapUrl = "https://www.yna.co.kr/rss/news.xml";
-                const bbcUrl = "https://feeds.bbci.co.uk/news/rss.xml";
-                const guardianUrl =
-                    "https://news.google.com/rss?hl=en&gl=US&ceid=US:en";
-                const nhkUrl = "https://www3.nhk.or.jp/rss/news/cat0.xml";
-                const dongaUrl = "https://rss.donga.com/total.xml";
-                const khanUrl =
-                    "https://www.khan.co.kr/rss/rssdata/total_news.xml";
-
-                const feedConfigs = [
-                    { url: yonhapUrl, indices: [0, 1, 2] },
-                    { url: bbcUrl, indices: [3] },
-                    { url: guardianUrl, indices: [4] },
-                    { url: nhkUrl, indices: [5] },
-                    { url: dongaUrl, indices: [6] },
-                    { url: khanUrl, indices: [7] },
-                ];
-
-                const fetchAndRender = async (config) => {
-                    let items = [];
-                    try {
-                        items = await fetchRSS(config.url);
-                    } catch (e) {
-                        console.error("Failed to fetch", config.url);
-                    }
-
-                    config.indices.forEach((cardIndex, i) => {
-                        const card = cards[cardIndex];
-                        if (!card) return;
-
-                        card.classList.remove("loading-skeleton");
-
-                        const titleEl = card.querySelector(
-                            ".news-title",
-                        ) as HTMLElement;
-                        const timeEl = card.querySelector(
-                            ".news-time",
-                        ) as HTMLElement;
-                        const htmlCard = card as HTMLElement;
-
-                        const badge = card.querySelector(
-                            ".news-badge",
-                        ) as HTMLElement;
-                        const imgContainer = card.querySelector(
-                            ".news-image",
-                        ) as HTMLElement;
-                        const imgBg = card.querySelector(
-                            ".news-image > div:nth-child(2)",
-                        ) as HTMLElement;
-                        const contentContainer = card.querySelector(
-                            ".news-content",
-                        ) as HTMLElement;
-
-                        const data = items[i];
-
-                        function hideImageShowBadge() {
-                            if (badge && imgContainer && contentContainer) {
-                                badge.style.position = "static";
-                                badge.style.display = "inline-block";
-                                badge.style.marginBottom = "12px";
-                                contentContainer.insertBefore(
-                                    badge,
-                                    contentContainer.firstChild,
-                                );
-                                imgContainer.style.display = "none";
-                            }
-                        }
-
-                        if (data && data.title !== "제목 없음") {
-                            titleEl.innerText = data.title;
-                            const minutes = getMinutesSince(data.pubDate);
-                            timeEl.innerText = formatTimeAgo(minutes);
-
-                            // 이미지 렌더링
-                            if (data.imageUrl && imgBg) {
-                                imgBg.style.background = `url("${data.imageUrl}") center/cover no-repeat`;
-                                const imgTest = new Image();
-                                imgTest.onerror = hideImageShowBadge;
-                                imgTest.src = data.imageUrl;
-                            } else {
-                                hideImageShowBadge();
-                            }
-
-                            htmlCard.onclick = () => {
-                                window.open(data.link, "_blank");
-                            };
+                        if (heroBottom <= headerHeight) {
+                            mobileHeader.classList.add("scrolled");
                         } else {
-                            // 데이터 없거나 로딩 실패
-                            titleEl.innerText = "기사를 불러올 수 없습니다";
-                            timeEl.innerText = "-";
-                            hideImageShowBadge();
+                            mobileHeader.classList.remove("scrolled");
                         }
-                    });
-                };
-
-                // 독립적으로 개별 렌더링 (성공한 피드부터 먼저 표시) + 모든 상태 보장
-                await Promise.allSettled(
-                    feedConfigs.map((config) => fetchAndRender(config)),
+                    },
+                    { passive: true },
                 );
             }
 
-            // Mobile card tap interactions (hover 효과 대체)
+            // Mobile card tap interactions and link routing
             document.querySelectorAll(".news-card").forEach((card) => {
                 const htmlCard = card as HTMLElement;
+                const link = htmlCard.getAttribute("data-link");
+
+                if (link) {
+                    htmlCard.style.cursor = "pointer";
+                    htmlCard.onclick = () => {
+                        window.open(link, "_blank");
+                    };
+                }
+
                 htmlCard.addEventListener("mousedown", () => {
                     htmlCard.style.transform = "scale(0.98)";
                 });
@@ -1030,6 +904,7 @@
                 htmlCard.addEventListener("mouseleave", () => {
                     htmlCard.style.transform = "scale(1)";
                 });
+
                 // for touch devices
                 htmlCard.addEventListener("touchstart", () => {
                     htmlCard.style.transform = "scale(0.98)";
@@ -1038,9 +913,6 @@
                     htmlCard.style.transform = "scale(1)";
                 });
             });
-
-            // RSS 피드 로드 실행
-            loadRSS();
         </script>
     </body>
 </html>
