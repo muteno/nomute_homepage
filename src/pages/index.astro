@@ -1127,6 +1127,7 @@ const feedsConfig = [
                 font-size: 12px;
                 color: #ffffff;
                 z-index: 10;
+                transition: opacity 0.3s ease;
             }
             #hero-datetime .accent {
                 color: #0ffd02;
@@ -1512,21 +1513,16 @@ const feedsConfig = [
                 const year = now.getFullYear();
                 const mm = String(now.getMonth() + 1).padStart(2, "0");
                 const dd = String(now.getDate()).padStart(2, "0");
+                let hours = now.getHours();
+                const min = String(now.getMinutes()).padStart(2, "0");
+                const ampm = hours >= 12 ? "PM" : "AM";
+                hours = hours % 12 || 12;
+                const hh = String(hours).padStart(2, "0");
                 const days = ["일", "월", "화", "수", "목", "금", "토"];
                 const day = days[now.getDay()];
 
-                let hours = now.getHours();
-                const minutes = String(now.getMinutes()).padStart(2, "0");
-                const ampm = hours >= 12 ? "PM" : "AM";
-                hours = hours % 12;
-                hours = hours ? hours : 12; // 0시는 12시로 표시
-                const hh = String(hours).padStart(2, "0");
-
-                const heroDateTime = document.getElementById("hero-datetime");
-                if (heroDateTime) {
-                    // 예시: 2026-02-23 월 11:33PM => 2026-<span class="accent">02-23 월</span> 11:33PM
-                    heroDateTime.innerHTML = `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${minutes}${ampm}`;
-                }
+                document.getElementById("hero-datetime").innerHTML =
+                    `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${min}${ampm}`;
             }
             updateDateTime();
             setInterval(updateDateTime, 60000);
