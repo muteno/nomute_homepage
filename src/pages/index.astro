@@ -856,7 +856,7 @@ const feedsConfig = [
             /* Floating Load More Button */
             #floating-load-more {
                 position: fixed;
-                top: 75%;
+                top: 65%;
                 left: 80%;
                 bottom: auto;
                 right: auto;
@@ -1240,34 +1240,18 @@ const feedsConfig = [
             const maxBatch = 3;
 
             if (floatingBtn) {
-                let scrollTimer;
-                let lastCardVisible = false;
-
                 const observer = new IntersectionObserver(
                     (entries) => {
                         entries.forEach((entry) => {
-                            lastCardVisible = entry.isIntersecting;
-                            if (!entry.isIntersecting) {
+                            if (currentBatch >= maxBatch) return; // 더 이상 로드할 게 없으면 무시
+                            if (entry.isIntersecting) {
+                                floatingBtn.style.display = "flex";
+                            } else {
                                 floatingBtn.style.display = "none";
                             }
                         });
                     },
                     { threshold: 0.3 },
-                );
-
-                // 스크롤 멈춤 감지 - 멈춘 후에만 버튼 표시
-                window.addEventListener(
-                    "scroll",
-                    () => {
-                        floatingBtn.style.display = "none";
-                        clearTimeout(scrollTimer);
-                        scrollTimer = setTimeout(() => {
-                            if (lastCardVisible && currentBatch < maxBatch) {
-                                floatingBtn.style.display = "flex";
-                            }
-                        }, 400);
-                    },
-                    { passive: true },
                 );
 
                 function observeLastCard() {
