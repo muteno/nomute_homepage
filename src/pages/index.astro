@@ -156,6 +156,7 @@ const urls = [
     "https://www.khan.co.kr/rss/rssdata/total_news.xml",
     "https://www.hankyung.com/feed/all-news",
     "https://www.hani.co.kr/rss/",
+    "http://www.ohmynews.com/rss/ohmynews.xml",
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
@@ -192,9 +193,13 @@ const hani =
     results[7].status === "fulfilled" && results[7].value
         ? results[7].value
         : null;
+const ohmynews =
+    results[8].status === "fulfilled" && results[8].value
+        ? results[8].value
+        : null;
 
 const feedsConfig = [
-    // --- SHOWN INITIALLY (Cards 1-12) ---
+    // --- SHOWN INITIALLY (Cards 1-11) ---
     // 1-4. YONHAP (정치, 경제, 사회, 국제)
     {
         data: yonhapPol ? yonhapPol[0] : null,
@@ -228,7 +233,7 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 5-6. YONHAP INT (Replaces WORLD)
+    // 5. YONHAP INT (2nd card)
     {
         data: yonhapInt ? yonhapInt[1] : null,
         source: "연합뉴스",
@@ -237,15 +242,8 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    {
-        data: yonhapInt ? yonhapInt[2] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    // 7-12. Right/Left split
+
+    // 6-11. Right/Left split
     {
         data: donga ? donga[0] : null,
         source: "동아일보",
@@ -286,9 +284,17 @@ const feedsConfig = [
         text: "#fff",
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
+    {
+        data: ohmynews ? ohmynews[0] : null,
+        source: "오마이뉴스",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
 
-    // --- HIDDEN BEHIND "LOAD MORE" (Cards 13-24) ---
-    // 13-16. YONHAP
+    // --- HIDDEN BEHIND "LOAD MORE" (Cards 12-22) ---
+    // 12-15. YONHAP
     {
         data: yonhapPol ? yonhapPol[1] : null,
         source: "연합뉴스",
@@ -314,31 +320,24 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
-        data: yonhapInt ? yonhapInt[1] : null,
+        data: yonhapInt ? yonhapInt[2] : null,
         source: "연합뉴스",
         badge: "국제",
         bg: "#0ffd02",
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 17-18. YONHAP INT (Replaces WORLD)
+    // 16. YONHAP INT (4th card total, but using 3rd index [3])
     {
-        data: yonhapInt ? yonhapInt[4] : null,
+        data: yonhapInt ? yonhapInt[3] : null,
         source: "연합뉴스",
         badge: "국제",
         bg: "#0ffd02",
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    {
-        data: yonhapInt ? yonhapInt[5] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    // 19-24. Right/Left split
+
+    // 17-22. Right/Left split
     {
         data: donga ? donga[2] : null,
         source: "동아일보",
@@ -378,6 +377,14 @@ const feedsConfig = [
         bg: "#FF3B3B",
         text: "#fff",
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: ohmynews ? ohmynews[1] : null,
+        source: "오마이뉴스",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
 ];
 ---
@@ -506,7 +513,7 @@ const feedsConfig = [
 
             /* Header / Logo */
             #mobile-header {
-                padding: 0 24px 16px 24px;
+                padding: 16px 24px;
                 display: flex;
                 justify-content: flex-start;
                 align-items: flex-end; /* Baseline match */
@@ -555,6 +562,7 @@ const feedsConfig = [
                 width: auto;
                 flex-shrink: 0;
                 transition: height 0.3s ease;
+                margin-top: 6px;
             }
 
             #mobile-header.scrolled .logo-img {
@@ -563,7 +571,7 @@ const feedsConfig = [
 
             .header-text-container {
                 font-family: var(--font-kr);
-                font-size: 19.5px;
+                font-size: 16.5px;
                 font-weight: 700;
                 line-height: 1.4;
                 color: rgba(255, 255, 255, 0.9);
@@ -977,7 +985,7 @@ const feedsConfig = [
                             const isHidden = index >= 11;
                             return (
                                 <>
-                                    {index === 6 && (
+                                    {index === 5 && (
                                         <div class="instagram-cta">
                                             <h2>JOIN THE MOVEMENT</h2>
                                             <p class="kor">
