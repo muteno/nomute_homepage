@@ -607,8 +607,8 @@ const feedsConfig = [
                 padding-top: 16px;
                 display: flex;
                 justify-content: flex-start;
-                align-items: flex-end; /* Baseline match */
-                gap: 16px;
+                align-items: center;
+                gap: 12px;
                 position: sticky;
                 top: 0;
                 z-index: 1000;
@@ -662,7 +662,7 @@ const feedsConfig = [
 
             .header-text-container {
                 font-family: var(--font-kr);
-                font-size: 16.5px;
+                font-size: 3.5vw;
                 font-weight: 700;
                 line-height: 1.4;
                 color: rgba(255, 255, 255, 0.9);
@@ -673,7 +673,6 @@ const feedsConfig = [
                     transform 0.4s ease;
                 white-space: nowrap;
                 pointer-events: none;
-                padding-bottom: 6px; /* Elevator spacing for baseline */
             }
 
             #mobile-header.scrolled .header-text-container {
