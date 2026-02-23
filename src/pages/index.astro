@@ -1510,16 +1510,22 @@ const feedsConfig = [
             function updateDateTime() {
                 const now = new Date();
                 const year = now.getFullYear();
-                const dd = String(now.getDate()).padStart(2, "0");
                 const mm = String(now.getMonth() + 1).padStart(2, "0");
-                const hh = String(now.getHours()).padStart(2, "0");
-                const min = String(now.getMinutes()).padStart(2, "0");
+                const dd = String(now.getDate()).padStart(2, "0");
                 const days = ["일", "월", "화", "수", "목", "금", "토"];
                 const day = days[now.getDay()];
 
+                let hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, "0");
+                const ampm = hours >= 12 ? "PM" : "AM";
+                hours = hours % 12;
+                hours = hours ? hours : 12; // 0시는 12시로 표시
+                const hh = String(hours).padStart(2, "0");
+
                 const heroDateTime = document.getElementById("hero-datetime");
                 if (heroDateTime) {
-                    heroDateTime.innerHTML = `${year}-<span class="accent">${dd}-${mm}</span> ${day} ${hh}:${min}`;
+                    // 예시: 2026-02-23 월 11:33PM => 2026-<span class="accent">02-23 월</span> 11:33PM
+                    heroDateTime.innerHTML = `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${minutes}${ampm}`;
                 }
             }
             updateDateTime();
