@@ -148,89 +148,155 @@ function formatTimeAgo(dateString) {
 
 // 빌드 시점에 모든 피드 병렬 로드
 const urls = [
-    "https://www.yna.co.kr/rss/news.xml",
-    "https://feeds.bbci.co.uk/news/rss.xml",
-    "https://news.google.com/rss?hl=en&gl=US&ceid=US:en",
-    "https://www3.nhk.or.jp/nhkworld/en/news/rss.xml", // 변경된 NHK 엔드포인트
-    "https://rss.donga.com/total.xml",
+    "https://www.yna.co.kr/rss/politics.xml",
+    "https://www.yna.co.kr/rss/economy.xml",
+    "https://www.yna.co.kr/rss/society.xml",
+    "https://www.yna.co.kr/rss/international.xml",
+    "https://www.rss.reuters.com/news/topNews",
+    "https://rsshub.app/apnews/topics/apf-topnews",
+    "https://www.chosun.com/arc/outboundfeeds/rss/",
     "https://www.khan.co.kr/rss/rssdata/total_news.xml",
+    "https://rss.joins.com/joins_news_list.xml",
+    "https://www.hani.co.kr/rss/",
+    "https://rss.donga.com/total.xml",
+    "https://www.sisain.co.kr/rss/allArticle.xml",
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
 
-const yonhap =
+const yonhapPol =
     results[0].status === "fulfilled" && results[0].value
         ? results[0].value
         : null;
-const bbc =
+const yonhapEco =
     results[1].status === "fulfilled" && results[1].value
         ? results[1].value
         : null;
-const google =
+const yonhapSoc =
     results[2].status === "fulfilled" && results[2].value
         ? results[2].value
         : null;
-const nhk =
+const yonhapInt =
     results[3].status === "fulfilled" && results[3].value
         ? results[3].value
         : null;
-const donga =
+const reuters =
     results[4].status === "fulfilled" && results[4].value
         ? results[4].value
         : null;
-const khan =
+const ap =
     results[5].status === "fulfilled" && results[5].value
         ? results[5].value
         : null;
+const chosun =
+    results[6].status === "fulfilled" && results[6].value
+        ? results[6].value
+        : null;
+const khan =
+    results[7].status === "fulfilled" && results[7].value
+        ? results[7].value
+        : null;
+const joins =
+    results[8].status === "fulfilled" && results[8].value
+        ? results[8].value
+        : null;
+const hani =
+    results[9].status === "fulfilled" && results[9].value
+        ? results[9].value
+        : null;
+const donga =
+    results[10].status === "fulfilled" && results[10].value
+        ? results[10].value
+        : null;
+const sisain =
+    results[11].status === "fulfilled" && results[11].value
+        ? results[11].value
+        : null;
 
 const feedsConfig = [
+    // --- SHOWN INITIALLY (Cards 1-12) ---
+    // 1-4. YONHAP (정치, 경제, 사회, 국제)
     {
-        data: yonhap ? yonhap[0] : null,
+        data: yonhapPol ? yonhapPol[0] : null,
         source: "연합뉴스",
-        badge: "BREAKING",
+        badge: "정치",
         bg: "#0ffd02",
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
-        data: yonhap ? yonhap[1] : null,
+        data: yonhapEco ? yonhapEco[0] : null,
         source: "연합뉴스",
-        badge: "BREAKING",
+        badge: "경제",
         bg: "#0ffd02",
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
-        data: yonhap ? yonhap[2] : null,
+        data: yonhapSoc ? yonhapSoc[0] : null,
         source: "연합뉴스",
-        badge: "BREAKING",
+        badge: "사회",
         bg: "#0ffd02",
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
-        data: bbc ? bbc[0] : null,
-        source: "BBC",
-        badge: "WORLD",
-        bg: "#fff",
+        data: yonhapInt ? yonhapInt[0] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
         text: "#000",
-        grad: "linear-gradient(135deg, #222, #0a0e0a)",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
+    // 5-6. WORLD (Reuters, AP News)
     {
-        data: google ? google[0] : null,
-        source: "Google News",
+        data: reuters ? reuters[0] : null,
+        source: "Reuters",
         badge: "WORLD",
         bg: "#fff",
         text: "#000",
         grad: "linear-gradient(135deg, #111, #0a0e0a)",
     },
     {
-        data: nhk ? nhk[0] : null,
-        source: "NHK World",
+        data: ap ? ap[0] : null,
+        source: "AP News",
         badge: "WORLD",
         bg: "#fff",
         text: "#000",
-        grad: "linear-gradient(135deg, #333, #0a0e0a)",
+        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+    },
+    // 7-12. Right/Left split
+    {
+        data: chosun ? chosun[0] : null,
+        source: "조선일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: khan ? khan[0] : null,
+        source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        data: joins ? joins[0] : null,
+        source: "중앙일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: hani ? hani[0] : null,
+        source: "한겨레",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
         data: donga ? donga[0] : null,
@@ -241,8 +307,109 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
-        data: khan ? khan[0] : null,
+        data: sisain ? sisain[0] : null,
+        source: "시사IN",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+
+    // --- HIDDEN BEHIND "LOAD MORE" (Cards 13-24) ---
+    // 13-16. YONHAP
+    {
+        data: yonhapPol ? yonhapPol[1] : null,
+        source: "연합뉴스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        data: yonhapEco ? yonhapEco[1] : null,
+        source: "연합뉴스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        data: yonhapSoc ? yonhapSoc[1] : null,
+        source: "연합뉴스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        data: yonhapInt ? yonhapInt[1] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    // 17-18. WORLD
+    {
+        data: reuters ? reuters[1] : null,
+        source: "Reuters",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+    },
+    {
+        data: ap ? ap[1] : null,
+        source: "AP News",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+    },
+    // 19-24. Right/Left split
+    {
+        data: chosun ? chosun[1] : null,
+        source: "조선일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: khan ? khan[1] : null,
         source: "경향신문",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        data: joins ? joins[1] : null,
+        source: "중앙일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: hani ? hani[1] : null,
+        source: "한겨레",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        data: donga ? donga[1] : null,
+        source: "동아일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        data: sisain ? sisain[1] : null,
+        source: "시사IN",
         badge: "LEFT",
         bg: "#3B7BFF",
         text: "#fff",
@@ -557,7 +724,7 @@ const feedsConfig = [
 
             /* Instagram CTA */
             .instagram-cta {
-                margin: 20px 24px 60px;
+                margin: 30px 0 40px;
                 background: rgba(20, 25, 20, 0.6);
                 border: 1px solid rgba(15, 253, 2, 0.4);
                 border-radius: 20px;
@@ -775,72 +942,95 @@ const feedsConfig = [
                     <h2 class="section-title">LATEST DROPS</h2>
 
                     {
-                        feedsConfig.map((feed) => {
+                        feedsConfig.map((feed, index) => {
                             const hasData =
                                 feed.data && feed.data.title !== "제목 없음";
                             const hasImage = hasData && feed.data.imageUrl;
+                            const isHidden = index >= 10;
                             return (
-                                <article
-                                    class="news-card"
-                                    data-link={hasData ? feed.data.link : ""}
-                                >
-                                    {hasImage ? (
-                                        <div class="news-image">
-                                            <div
-                                                class="news-badge"
-                                                style={`background-color: ${feed.bg}; color: ${feed.text};`}
+                                <>
+                                    {index === 6 && (
+                                        <div class="instagram-cta">
+                                            <h2>JOIN THE MOVEMENT</h2>
+                                            <p class="kor">
+                                                Instagram에서{" "}
+                                                <span
+                                                    class="highlight"
+                                                    style="font-weight: 700;"
+                                                >
+                                                    no_mute
+                                                </span>
+                                                가 전하는
+                                                <br />
+                                                가장 빠른 이슈 업데이트를
+                                                확인하세요.
+                                            </p>
+                                            <a
+                                                href="https://instagram.com/no_mute"
+                                                class="btn-instagram"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
                                             >
-                                                {feed.badge}
-                                            </div>
-                                            <div
-                                                style={`width:100%; height:100%; background: url('${feed.data.imageUrl}') center/cover no-repeat, ${feed.grad};`}
-                                            />
+                                                @no_mute 팔로우하기
+                                            </a>
                                         </div>
-                                    ) : null}
-                                    <div class="news-content">
-                                        {!hasImage && (
-                                            <div
-                                                class="news-badge"
-                                                style={`background-color: ${feed.bg}; color: ${feed.text}; position: static; transform: none; display: inline-block; margin-bottom: 12px;`}
-                                            >
-                                                {feed.badge}
+                                    )}
+                                    <article
+                                        class={`news-card ${isHidden ? "hidden-card" : ""}`}
+                                        style={isHidden ? "display: none;" : ""}
+                                        data-link={
+                                            hasData ? feed.data.link : ""
+                                        }
+                                    >
+                                        {hasImage ? (
+                                            <div class="news-image">
+                                                <div
+                                                    class="news-badge"
+                                                    style={`background-color: ${feed.bg}; color: ${feed.text};`}
+                                                >
+                                                    {feed.badge}
+                                                </div>
+                                                <div
+                                                    style={`width:100%; height:100%; background: url('${feed.data.imageUrl}') center/cover no-repeat, ${feed.grad};`}
+                                                />
                                             </div>
-                                        )}
-                                        <h3 class="news-title">
-                                            {hasData
-                                                ? feed.data.title
-                                                : "기사를 불러올 수 없습니다"}
-                                        </h3>
-                                        <div class="news-meta">
-                                            <span>{feed.source}</span>
-                                            <span class="news-time">
+                                        ) : null}
+                                        <div class="news-content">
+                                            {!hasImage && (
+                                                <div
+                                                    class="news-badge"
+                                                    style={`background-color: ${feed.bg}; color: ${feed.text}; position: static; transform: none; display: inline-block; margin-bottom: 12px;`}
+                                                >
+                                                    {feed.badge}
+                                                </div>
+                                            )}
+                                            <h3 class="news-title">
                                                 {hasData
-                                                    ? formatTimeAgo(
-                                                          feed.data.pubDate,
-                                                      )
-                                                    : "-"}
-                                            </span>
+                                                    ? feed.data.title
+                                                    : "기사를 불러올 수 없습니다"}
+                                            </h3>
+                                            <div class="news-meta">
+                                                <span>{feed.source}</span>
+                                                <span class="news-time">
+                                                    {hasData
+                                                        ? formatTimeAgo(
+                                                              feed.data.pubDate,
+                                                          )
+                                                        : "-"}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </article>
+                                    </article>
+                                </>
                             );
                         })
                     }
-                </section>
 
-                <section class="instagram-cta">
-                    <h2>JOIN THE MOVEMENT</h2>
-                    <p class="kor">
-                        Instagram에서 <span
-                            class="highlight"
-                            style="font-weight: 700;">no_mute</span
-                        >가 전하는<br />가장 빠른 이슈 업데이트를 확인하세요.
-                    </p>
-                    <a
-                        href="https://instagram.com/no_mute"
+                    <button
+                        id="load-more-btn"
                         class="btn-instagram"
-                        target="_blank"
-                        rel="noopener noreferrer">@no_mute 팔로우하기</a
+                        style="margin-top: 10px; width: 100%; border: none; cursor: pointer; text-align: center;"
+                        >더 보기</button
                     >
                 </section>
 
@@ -881,6 +1071,21 @@ const feedsConfig = [
                     },
                     { passive: true },
                 );
+            }
+
+            // Load More Button Logic
+            const loadMoreBtn = document.getElementById("load-more-btn");
+            if (loadMoreBtn) {
+                loadMoreBtn.addEventListener("click", () => {
+                    document
+                        .querySelectorAll(".hidden-card")
+                        .forEach((card) => {
+                            (card as HTMLElement).style.display = "block";
+                            // trigger reflow to apply css transition gracefully if any
+                            card.classList.remove("hidden-card");
+                        });
+                    loadMoreBtn.style.display = "none";
+                });
             }
 
             // Mobile card tap interactions and link routing
