@@ -181,6 +181,24 @@
                 height: 18px;
                 background-color: var(--accent-green);
             }
+            .loading-skeleton {
+                animation: pulse-skeleton 1.5s infinite ease-in-out;
+                pointer-events: none;
+            }
+            .loading-skeleton .news-title {
+                color: rgba(255, 255, 255, 0.5);
+            }
+            @keyframes pulse-skeleton {
+                0% {
+                    opacity: 0.6;
+                }
+                50% {
+                    opacity: 1;
+                }
+                100% {
+                    opacity: 0.6;
+                }
+            }
             .news-card {
                 background-color: var(--card-bg);
                 border: 1px solid var(--border-color);
@@ -452,9 +470,10 @@
                 <section class="latest-news">
                     <h2 class="section-title">LATEST DROPS</h2>
 
+                    <!-- Card 1: BREAKING -->
                     <article class="news-card">
                         <div class="news-image">
-                            <div class="news-badge">Breaking</div>
+                            <div class="news-badge">BREAKING</div>
                             <div
                                 style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
                             >
@@ -466,33 +485,108 @@
                                 장악하는 방법
                             </h3>
                             <div class="news-meta">
-                                <span>에디터 포커스</span>
-                                <span>2시간 전</span>
+                                <span>연합뉴스</span>
+                                <span class="news-time" data-minutes="0"
+                                    >방금 전</span
+                                >
                             </div>
                         </div>
                     </article>
 
+                    <!-- Card 2: BREAKING -->
                     <article class="news-card">
                         <div class="news-image">
+                            <div class="news-badge">BREAKING</div>
                             <div
-                                class="news-badge"
-                                style="background-color: var(--accent-green); color: #000;"
-                            >
-                                Culture
-                            </div>
-                            <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #0f1a0f, #0a0e0a);"
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
                             >
                             </div>
                         </div>
                         <div class="news-content">
                             <h3 class="news-title">
-                                네온 시대: 현대 패션에서 대안적 미학의 부상과
-                                시사점
+                                새로운 규제 법안 발의, 미디어 검열 논란 확대
                             </h3>
                             <div class="news-meta">
-                                <span>스튜디오 제로</span>
-                                <span>5시간 전</span>
+                                <span>연합뉴스</span>
+                                <span class="news-time" data-minutes="10"
+                                    >방금 전</span
+                                >
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 3: BREAKING -->
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div class="news-badge">BREAKING</div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">
+                                글로벌 네트워크 보안 사고 발생, 업계 비상
+                            </h3>
+                            <div class="news-meta">
+                                <span>연합뉴스</span>
+                                <span class="news-time" data-minutes="60"
+                                    >1시간 전</span
+                                >
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 4: RIGHT -->
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div
+                                class="news-badge"
+                                style="background-color: #FF3B3B; color: #fff;"
+                            >
+                                RIGHT
+                            </div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #2a0f0f, #0a0e0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">
+                                정부 정책 방향성에 대한 보수 진영의 시각
+                            </h3>
+                            <div class="news-meta">
+                                <span>중앙일보</span>
+                                <span class="news-time" data-minutes="90"
+                                    >1시간 전</span
+                                >
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 5: LEFT -->
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div
+                                class="news-badge"
+                                style="background-color: #3B7BFF; color: #fff;"
+                            >
+                                LEFT
+                            </div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #0f182a, #0a0e0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">
+                                시민 사회 단체들의 노동권 보장구 확대 시위
+                            </h3>
+                            <div class="news-meta">
+                                <span>경향신문</span>
+                                <span class="news-time" data-minutes="150"
+                                    >2시간 전</span
+                                >
                             </div>
                         </div>
                     </article>
@@ -531,16 +625,134 @@
 
         <!-- Interactions -->
         <script>
+            // 시간 계산 유틸리티 함수
+            function formatTimeAgo(minutes) {
+                if (minutes < 60) {
+                    return "방금 전";
+                } else if (minutes < 1440) {
+                    return Math.floor(minutes / 60) + "시간 전";
+                } else {
+                    return Math.floor(minutes / 1440) + "일 전";
+                }
+            }
+
+            // 날짜 문자열로부터 분단위 경과 시간 계산
+            function getMinutesSince(dateString) {
+                const pubDate = new Date(dateString);
+                const now = new Date();
+                if (isNaN(pubDate.getTime())) return 0;
+                const diffMs = now.getTime() - pubDate.getTime();
+                return Math.max(0, Math.floor(diffMs / 60000));
+            }
+
+            // RSS 피드 가져오기 (CORS 우회 Proxy 사용)
+            async function fetchRSS(url) {
+                try {
+                    const proxyUrl =
+                        "https://api.allorigins.win/raw?url=" +
+                        encodeURIComponent(url);
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error("Network response error");
+                    const text = await response.text();
+                    const parser = new DOMParser();
+                    const xml = parser.parseFromString(text, "text/xml");
+                    const items = Array.from(xml.querySelectorAll("item"));
+                    return items.map((item) => ({
+                        title:
+                            item.querySelector("title")?.textContent ||
+                            "제목 없음",
+                        link: item.querySelector("link")?.textContent || "#",
+                        pubDate:
+                            item.querySelector("pubDate")?.textContent ||
+                            new Date().toISOString(),
+                    }));
+                } catch (error) {
+                    console.error("Error fetching RSS:", error);
+                    return [];
+                }
+            }
+
+            // 메인 로드 함수
+            async function loadRSS() {
+                const cards = document.querySelectorAll(".news-card");
+
+                // 로딩 스켈레톤 상태 적용
+                cards.forEach((card) => card.classList.add("loading-skeleton"));
+
+                const yonhapUrl = "https://www.yna.co.kr/rss/news.xml";
+                const joinsUrl = "https://rss.joins.com/joins_news_list.xml";
+                const khanUrl =
+                    "https://www.khan.co.kr/rss/rssdata/total_news.xml";
+
+                let yonhap = [],
+                    joins = [],
+                    khan = [];
+
+                try {
+                    const result = await Promise.all([
+                        fetchRSS(yonhapUrl),
+                        fetchRSS(joinsUrl),
+                        fetchRSS(khanUrl),
+                    ]);
+                    yonhap = result[0] as any[];
+                    joins = result[1] as any[];
+                    khan = result[2] as any[];
+                } catch (e) {
+                    console.error("Failed to load RSS data", e);
+                }
+
+                // 카드 매핑 (0,1,2: 연합 / 3: 중앙 / 4: 경향)
+                const feeds = [
+                    yonhap[0],
+                    yonhap[1],
+                    yonhap[2],
+                    joins[0],
+                    khan[0],
+                ];
+
+                cards.forEach((card, i) => {
+                    card.classList.remove("loading-skeleton");
+
+                    const titleEl = card.querySelector(
+                        ".news-title",
+                    ) as HTMLElement;
+                    const timeEl = card.querySelector(
+                        ".news-time",
+                    ) as HTMLElement;
+                    const htmlCard = card as HTMLElement;
+
+                    const data = feeds[i];
+
+                    if (data && data.title !== "제목 없음") {
+                        titleEl.innerText = data.title;
+                        const minutes = getMinutesSince(data.pubDate);
+                        timeEl.innerText = formatTimeAgo(minutes);
+
+                        // 기사 클릭 시 새 탭으로 이동
+                        htmlCard.addEventListener("click", () => {
+                            window.open(data.link, "_blank");
+                        });
+                    } else {
+                        // fetch 실패 시 또는 데이터 없을 시
+                        titleEl.innerText = "뉴스를 불러오는 중입니다";
+                        timeEl.innerText = "-";
+                    }
+                });
+            }
+
             // Mobile card tap interactions
-            const cards = document.querySelectorAll(".news-card");
-            cards.forEach((card) => {
-                card.addEventListener("click", () => {
-                    card.style.transform = "scale(0.98)";
+            document.querySelectorAll(".news-card").forEach((card) => {
+                const htmlCard = card as HTMLElement;
+                htmlCard.addEventListener("click", () => {
+                    htmlCard.style.transform = "scale(0.98)";
                     setTimeout(() => {
-                        card.style.transform = "scale(1)";
+                        htmlCard.style.transform = "scale(1)";
                     }, 150);
                 });
             });
+
+            // RSS 피드 로드 실행
+            loadRSS();
         </script>
     </body>
 </html>
