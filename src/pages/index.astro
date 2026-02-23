@@ -881,6 +881,12 @@ const feedsConfig = [
                 padding: 0;
                 transition: none;
                 box-shadow: none;
+                touch-action: manipulation;
+                -webkit-touch-callout: none;
+                user-select: none;
+                -webkit-user-select: none;
+                pointer-events: auto !important;
+                z-index: 99999;
             }
             #floating-load-more:active {
                 transform: scale(0.92);
@@ -1259,40 +1265,35 @@ const feedsConfig = [
                 observeLastCard();
 
                 let isLoading = false;
-                const loadTargetBatch = (e) => {
-                    if (isLoading) return;
-                    isLoading = true;
-
-                    currentBatch++;
-                    document
-                        .querySelectorAll(`[data-batch="${currentBatch}"]`)
-                        .forEach((card) => {
-                            (card as HTMLElement).style.display = "block";
-                        });
-                    floatingBtn.style.display = "none";
-
-                    if (currentBatch >= maxBatch) {
-                        // 마지막 batch → 배너 표시, 버튼 완전 제거
-                        observer.disconnect();
-                        const endCta = document.getElementById("end-cta");
-                        if (endCta) endCta.style.display = "block";
-                        floatingBtn.remove();
-                    } else {
-                        // 다음 batch의 마지막 카드 감시 시작
-                        observeLastCard();
-                    }
-
-                    setTimeout(() => {
-                        isLoading = false;
-                    }, 300);
-                };
-
-                floatingBtn.addEventListener("click", loadTargetBatch);
                 floatingBtn.addEventListener(
-                    "touchend",
+                    "pointerdown",
                     (e) => {
-                        e.preventDefault();
-                        floatingBtn.click();
+                        e.stopPropagation();
+                        if (isLoading) return;
+                        isLoading = true;
+
+                        currentBatch++;
+                        document
+                            .querySelectorAll(`[data-batch="${currentBatch}"]`)
+                            .forEach((card) => {
+                                (card as HTMLElement).style.display = "block";
+                            });
+                        floatingBtn.style.display = "none";
+
+                        if (currentBatch >= maxBatch) {
+                            // 마지막 batch → 배너 표시, 버튼 완전 제거
+                            observer.disconnect();
+                            const endCta = document.getElementById("end-cta");
+                            if (endCta) endCta.style.display = "block";
+                            floatingBtn.remove();
+                        } else {
+                            // 다음 batch의 마지막 카드 감시 시작
+                            observeLastCard();
+                        }
+
+                        setTimeout(() => {
+                            isLoading = false;
+                        }, 300);
                     },
                     { passive: false },
                 );
