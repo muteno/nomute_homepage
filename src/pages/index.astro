@@ -1116,6 +1116,7 @@ const feedsConfig = [
                 background: #0ffd02;
                 z-index: 1001;
                 transition: width 0.1s linear;
+                opacity: 0.5;
             }
 
             #hero-datetime {
@@ -1538,7 +1539,7 @@ const feedsConfig = [
                         if (progressBar) {
                             progressBar.style.width =
                                 Math.min(progress, 100) + "%";
-                            progressBar.style.opacity = "1";
+                            progressBar.style.opacity = "0.5";
                         }
                     } else {
                         if (progressBar) {
