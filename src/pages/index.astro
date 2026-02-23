@@ -1,0 +1,471 @@
+---
+// src/pages/index.astro
+---
+
+<!doctype html>
+<html lang="ko">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <title>No Mute - Breaking News Channel</title>
+        <meta
+            name="description"
+            content="No Mute News Channel - The Voice of the Unheard"
+        />
+        <style>
+            :root {
+                --bg-color: #000000;
+                --text-main: #ffffff;
+                --text-muted: #888888;
+                --accent-primary: #ffff00; /* Neon Yellow/Green vibe */
+                --accent-secondary: #ff003c; /* Cyberpunk Red */
+                --card-bg: #111111;
+                --border-color: #333333;
+            }
+
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            body {
+                font-family:
+                    "Pretendard",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    system-ui,
+                    Roboto,
+                    "Helvetica Neue",
+                    "Segoe UI",
+                    "Apple SD Gothic Neo",
+                    "Noto Sans KR",
+                    "Malgun Gothic",
+                    sans-serif;
+                background-color: var(--bg-color);
+                color: var(--text-main);
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+                overflow-x: hidden;
+            }
+
+            /* Mobile Container to emulate mobile app feel on desktop */
+            .mobile-container {
+                max-width: 480px;
+                margin: 0 auto;
+                min-height: 100vh;
+                background-color: var(--bg-color);
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                border-left: 1px solid var(--border-color);
+                border-right: 1px solid var(--border-color);
+            }
+
+            /* Header */
+            header {
+                padding: 20px 24px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                position: sticky;
+                top: 0;
+                background: rgba(0, 0, 0, 0.8);
+                backdrop-filter: blur(10px);
+                z-index: 100;
+                border-bottom: 1px solid var(--border-color);
+            }
+
+            .logo {
+                font-size: 24px;
+                font-weight: 900;
+                letter-spacing: -1px;
+                text-transform: uppercase;
+            }
+
+            .logo span {
+                color: var(--accent-primary);
+            }
+
+            .menu-btn {
+                background: none;
+                border: none;
+                color: var(--text-main);
+                font-size: 24px;
+                cursor: pointer;
+            }
+
+            /* Hero Section */
+            .hero {
+                padding: 60px 24px 40px;
+                text-align: left;
+            }
+
+            .hero h1 {
+                font-size: 42px;
+                font-weight: 800;
+                line-height: 1.2;
+                margin-bottom: 16px;
+                word-break: keep-all;
+            }
+
+            .hero p {
+                font-size: 16px;
+                color: var(--text-muted);
+                margin-bottom: 32px;
+                word-break: keep-all;
+            }
+
+            /* News Cards */
+            .latest-news {
+                padding: 0 24px 40px;
+            }
+
+            .section-title {
+                font-size: 20px;
+                font-weight: 700;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .section-title::before {
+                content: "";
+                display: block;
+                width: 8px;
+                height: 20px;
+                background-color: var(--accent-primary);
+            }
+
+            .news-card {
+                background-color: var(--card-bg);
+                border: 1px solid var(--border-color);
+                border-radius: 16px;
+                overflow: hidden;
+                margin-bottom: 20px;
+                transition: transform 0.2s ease;
+            }
+
+            .news-card:active {
+                transform: scale(0.98);
+            }
+
+            .news-image {
+                width: 100%;
+                height: 200px;
+                background-color: #222;
+                position: relative;
+            }
+
+            .news-image img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+            .news-badge {
+                position: absolute;
+                top: 12px;
+                left: 12px;
+                background-color: var(--accent-secondary);
+                color: #fff;
+                padding: 4px 10px;
+                font-size: 12px;
+                font-weight: 700;
+                border-radius: 4px;
+                text-transform: uppercase;
+            }
+
+            .news-content {
+                padding: 20px;
+            }
+
+            .news-title {
+                font-size: 18px;
+                font-weight: 700;
+                margin-bottom: 8px;
+                line-height: 1.4;
+            }
+
+            .news-meta {
+                font-size: 13px;
+                color: var(--text-muted);
+                display: flex;
+                justify-content: space-between;
+            }
+
+            /* Instagram CTA */
+            .instagram-cta {
+                margin: 20px 24px 60px;
+                background: linear-gradient(
+                    45deg,
+                    #f09433 0%,
+                    #e6683c 25%,
+                    #dc2743 50%,
+                    #cc2366 75%,
+                    #bc1888 100%
+                );
+                border-radius: 16px;
+                padding: 30px 20px;
+                text-align: center;
+                position: relative;
+                overflow: hidden;
+            }
+
+            .instagram-cta h2 {
+                font-size: 24px;
+                font-weight: 800;
+                margin-bottom: 10px;
+            }
+
+            .instagram-cta p {
+                font-size: 14px;
+                margin-bottom: 20px;
+                opacity: 0.9;
+            }
+
+            .btn-instagram {
+                display: inline-block;
+                background-color: #fff;
+                color: #000;
+                text-decoration: none;
+                padding: 14px 32px;
+                border-radius: 30px;
+                font-weight: 800;
+                font-size: 16px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                transition: all 0.3s ease;
+                text-transform: uppercase;
+            }
+
+            .btn-instagram:active {
+                transform: translateY(2px);
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            }
+
+            /* Footer */
+            footer {
+                margin-top: auto;
+                padding: 40px 24px 60px;
+                border-top: 1px solid var(--border-color);
+                color: var(--text-muted);
+                font-size: 12px;
+                text-align: center;
+            }
+
+            /* Utilities */
+            .gradient-text {
+                background: linear-gradient(90deg, #ffffff, var(--text-muted));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+
+            .fixed-bottom-bar {
+                position: fixed;
+                bottom: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100%;
+                max-width: 480px;
+                padding: 16px 24px;
+                background: rgba(17, 17, 17, 0.9);
+                backdrop-filter: blur(10px);
+                border-top: 1px solid var(--border-color);
+                display: flex;
+                gap: 12px;
+                z-index: 100;
+            }
+
+            .btn-primary {
+                flex: 1;
+                background-color: var(--accent-primary);
+                color: #000;
+                text-align: center;
+                padding: 16px;
+                border-radius: 12px;
+                font-weight: 800;
+                font-size: 16px;
+                text-decoration: none;
+                text-transform: uppercase;
+            }
+
+            .btn-outline {
+                flex: 0 0 auto;
+                background: transparent;
+                color: #fff;
+                border: 1px solid var(--border-color);
+                padding: 16px 24px;
+                border-radius: 12px;
+                font-weight: 700;
+                text-decoration: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            @media (max-width: 480px) {
+                .mobile-container {
+                    border: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="mobile-container">
+            <!-- Header -->
+            <header>
+                <div class="logo">NO<span>MUTE</span></div>
+                <button class="menu-btn" aria-label="Menu">
+                    <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </header>
+
+            <!-- Hero Section -->
+            <section class="hero">
+                <h1 class="gradient-text">
+                    THE VOICE<br />OF THE<br />UNHEARD.
+                </h1>
+                <p>
+                    We break the silence. Get the latest unfiltered news and raw
+                    stories directly from the source.
+                </p>
+            </section>
+
+            <!-- Latest News -->
+            <section class="latest-news">
+                <h2 class="section-title">LATEST DROPS</h2>
+
+                <!-- Card 1 -->
+                <article class="news-card">
+                    <div class="news-image">
+                        <div class="news-badge">Breaking</div>
+                        <!-- Placeholder image with stylized gradient -->
+                        <div
+                            style="width:100%; height:100%; background: linear-gradient(to bottom, #2a2a2a, #111);"
+                        >
+                        </div>
+                    </div>
+                    <div class="news-content">
+                        <h3 class="news-title">
+                            The Silent Revolution: How underground creators are
+                            taking over
+                        </h3>
+                        <div class="news-meta">
+                            <span>By Editor Focus</span>
+                            <span>2h ago</span>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Card 2 -->
+                <article class="news-card">
+                    <div class="news-image">
+                        <div
+                            class="news-badge"
+                            style="background-color: #3b82f6;"
+                        >
+                            Culture
+                        </div>
+                        <div
+                            style="width:100%; height:100%; background: linear-gradient(to bottom, #1e3a8a, #111);"
+                        >
+                        </div>
+                    </div>
+                    <div class="news-content">
+                        <h3 class="news-title">
+                            Neon Nights: The rise of alternative aesthetic in
+                            modern fashion
+                        </h3>
+                        <div class="news-meta">
+                            <span>By Studio Zero</span>
+                            <span>5h ago</span>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- Instagram CTA -->
+            <section class="instagram-cta">
+                <h2>JOIN THE MOVEMENT</h2>
+                <p>
+                    Follow us on Instagram for daily updates, exclusive stories,
+                    and behind-the-scenes content.
+                </p>
+                <a
+                    href="https://instagram.com"
+                    class="btn-instagram"
+                    target="_blank"
+                    rel="noopener noreferrer">@NOMUTE_OFFICIAL</a
+                >
+            </section>
+
+            <!-- Footer -->
+            <footer>
+                <div
+                    style="font-weight: 700; font-size: 16px; margin-bottom: 8px;"
+                >
+                    NO MUTE NEWS
+                </div>
+                <p>&copy; 2026 No Mute Media. All rights reserved.</p>
+                <p style="margin-top: 8px; opacity: 0.5;">
+                    Break the silence. Speak the truth.
+                </p>
+                <br /><br /><br /><br />
+                <!-- padding for fixed bottom bar -->
+            </footer>
+
+            <!-- Fixed Bottom CTA -->
+            <div class="fixed-bottom-bar">
+                <a href="#" class="btn-outline">
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                    >
+                        <path
+                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+                        ></path>
+                        <polyline points="22,6 12,13 2,6"></polyline>
+                    </svg>
+                </a>
+                <a href="#" class="btn-primary">SUBSCRIBE NOW</a>
+            </div>
+        </div>
+
+        <script>
+            // Simple interaction for cards
+            const cards = document.querySelectorAll(".news-card");
+            cards.forEach((card) => {
+                card.addEventListener("click", () => {
+                    card.style.transform = "scale(0.98)";
+                    setTimeout(() => {
+                        card.style.transform = "scale(1)";
+                    }, 150);
+                });
+            });
+        </script>
+    </body>
+</html>
