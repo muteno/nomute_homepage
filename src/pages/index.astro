@@ -1630,6 +1630,17 @@ const feedsConfig = [
                         setTimeout(() => {
                             isLoading = false;
                         }, 300);
+
+                        // DOM 증가에 맞춰 프로그레스바 즉시 비율 재계산
+                        const scrollTop = window.scrollY;
+                        const docHeight =
+                            document.documentElement.scrollHeight -
+                            window.innerHeight;
+                        const progress = (scrollTop / docHeight) * 100;
+                        if (progressBar) {
+                            progressBar.style.width =
+                                Math.min(progress, 100) + "%";
+                        }
                     },
                     { passive: false },
                 );
