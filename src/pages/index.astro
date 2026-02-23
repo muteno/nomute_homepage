@@ -152,14 +152,13 @@ const urls = [
     "https://www.yna.co.kr/rss/economy.xml",
     "https://www.yna.co.kr/rss/society.xml",
     "https://www.yna.co.kr/rss/international.xml",
-    "https://www.rss.reuters.com/news/topNews",
-    "https://rsshub.app/apnews/topics/apf-topnews",
-    "https://www.chosun.com/arc/outboundfeeds/rss/",
-    "https://www.khan.co.kr/rss/rssdata/total_news.xml",
-    "https://rss.joins.com/joins_news_list.xml",
-    "https://www.hani.co.kr/rss/",
+    "https://apnews.com/world-news.rss",
+    "https://feeds.bbci.co.uk/news/rss.xml",
     "https://rss.donga.com/total.xml",
-    "https://www.sisain.co.kr/rss/allArticle.xml",
+    "https://www.khan.co.kr/rss/rssdata/total_news.xml",
+    "https://www.hankyung.com/feed/all-news",
+    "https://www.hani.co.kr/rss/",
+    "http://www.ohmynews.com/rss/ohmynews.xml",
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
@@ -180,15 +179,15 @@ const yonhapInt =
     results[3].status === "fulfilled" && results[3].value
         ? results[3].value
         : null;
-const reuters =
+const ap =
     results[4].status === "fulfilled" && results[4].value
         ? results[4].value
         : null;
-const ap =
+const bbc =
     results[5].status === "fulfilled" && results[5].value
         ? results[5].value
         : null;
-const chosun =
+const donga =
     results[6].status === "fulfilled" && results[6].value
         ? results[6].value
         : null;
@@ -196,7 +195,7 @@ const khan =
     results[7].status === "fulfilled" && results[7].value
         ? results[7].value
         : null;
-const joins =
+const hankyung =
     results[8].status === "fulfilled" && results[8].value
         ? results[8].value
         : null;
@@ -204,13 +203,9 @@ const hani =
     results[9].status === "fulfilled" && results[9].value
         ? results[9].value
         : null;
-const donga =
+const ohmynews =
     results[10].status === "fulfilled" && results[10].value
         ? results[10].value
-        : null;
-const sisain =
-    results[11].status === "fulfilled" && results[11].value
-        ? results[11].value
         : null;
 
 const feedsConfig = [
@@ -248,15 +243,7 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 5-6. WORLD (Reuters, AP News)
-    {
-        data: reuters ? reuters[0] : null,
-        source: "Reuters",
-        badge: "WORLD",
-        bg: "#fff",
-        text: "#000",
-        grad: "linear-gradient(135deg, #111, #0a0e0a)",
-    },
+    // 5-6. WORLD (AP News, BBC)
     {
         data: ap ? ap[0] : null,
         source: "AP News",
@@ -265,10 +252,18 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #111, #0a0e0a)",
     },
+    {
+        data: bbc ? bbc[0] : null,
+        source: "BBC",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+    },
     // 7-12. Right/Left split
     {
-        data: chosun ? chosun[0] : null,
-        source: "조선일보",
+        data: donga ? donga[0] : null,
+        source: "동아일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -283,8 +278,8 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
-        data: joins ? joins[0] : null,
-        source: "중앙일보",
+        data: hankyung ? hankyung[0] : null,
+        source: "한국경제",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -299,7 +294,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
-        data: donga ? donga[0] : null,
+        data: donga ? donga[1] : null,
         source: "동아일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
@@ -307,8 +302,8 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
-        data: sisain ? sisain[0] : null,
-        source: "시사IN",
+        data: ohmynews ? ohmynews[0] : null,
+        source: "오마이뉴스",
         badge: "LEFT",
         bg: "#3B7BFF",
         text: "#fff",
@@ -349,15 +344,7 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 17-18. WORLD
-    {
-        data: reuters ? reuters[1] : null,
-        source: "Reuters",
-        badge: "WORLD",
-        bg: "#fff",
-        text: "#000",
-        grad: "linear-gradient(135deg, #111, #0a0e0a)",
-    },
+    // 17-18. WORLD (AP News, BBC)
     {
         data: ap ? ap[1] : null,
         source: "AP News",
@@ -366,10 +353,18 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #111, #0a0e0a)",
     },
+    {
+        data: bbc ? bbc[1] : null,
+        source: "BBC",
+        badge: "WORLD",
+        bg: "#fff",
+        text: "#000",
+        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+    },
     // 19-24. Right/Left split
     {
-        data: chosun ? chosun[1] : null,
-        source: "조선일보",
+        data: donga ? donga[2] : null,
+        source: "동아일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -384,8 +379,8 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
-        data: joins ? joins[1] : null,
-        source: "중앙일보",
+        data: hankyung ? hankyung[1] : null,
+        source: "한국경제",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -400,7 +395,7 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
     {
-        data: donga ? donga[1] : null,
+        data: donga ? donga[3] : null,
         source: "동아일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
@@ -408,8 +403,8 @@ const feedsConfig = [
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
-        data: sisain ? sisain[1] : null,
-        source: "시사IN",
+        data: ohmynews ? ohmynews[1] : null,
+        source: "오마이뉴스",
         badge: "LEFT",
         bg: "#3B7BFF",
         text: "#fff",
@@ -545,26 +540,41 @@ const feedsConfig = [
                 padding: 16px 24px;
                 display: flex;
                 justify-content: flex-start;
-                align-items: center;
+                align-items: flex-end; /* Baseline match */
                 gap: 16px;
                 position: sticky;
                 top: 0;
-                z-index: 100;
+                z-index: 1000;
+            }
+
+            /* Full viewport width background for blocking behind sticky nav */
+            #mobile-header::before {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 100vw;
+                height: 200%; /* Double height for smooth fade */
                 background: linear-gradient(
                     180deg,
-                    rgba(2, 4, 2, 0.9) 0%,
+                    rgba(2, 4, 2, 0.98) 40%,
+                    rgba(2, 4, 2, 0.7) 70%,
                     transparent 100%
                 );
+                z-index: -1;
+                pointer-events: none;
                 transition:
                     background 0.3s ease,
                     backdrop-filter 0.3s ease,
                     -webkit-backdrop-filter 0.3s ease;
             }
 
-            #mobile-header.scrolled {
+            #mobile-header.scrolled::before {
                 background: linear-gradient(
                     180deg,
-                    rgba(0, 0, 0, 0.85) 75%,
+                    rgba(0, 0, 0, 0.98) 40%,
+                    rgba(0, 0, 0, 0.8) 70%,
                     transparent 100%
                 );
                 backdrop-filter: blur(12px);
@@ -595,6 +605,7 @@ const feedsConfig = [
                     transform 0.4s ease;
                 white-space: nowrap;
                 pointer-events: none;
+                padding-bottom: 6px; /* Elevator spacing for baseline */
             }
 
             #mobile-header.scrolled .header-text-container {
@@ -954,8 +965,9 @@ const feedsConfig = [
                         class="logo-img"
                     />
                     <div class="header-text-container">
-                        불편한 진실을 대면할<br />
-                        <span class="highlight">현명한 당신을 위합니다.</span>
+                        불편한 진실을 대면할 <span class="highlight"
+                            >현명한 당신을 위합니다.</span
+                        >
                     </div>
                 </header>
 
