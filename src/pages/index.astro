@@ -485,7 +485,7 @@ const feedsConfig = [
                 overflow-x: hidden;
             }
 
-            /* 1. Background Image */
+            /* 1. Mobile Background Image (Default) */
             .bg-dark-wave {
                 position: fixed;
                 top: 0;
@@ -498,6 +498,14 @@ const feedsConfig = [
                 background-size: cover;
                 background-attachment: fixed;
                 background-position: center;
+            }
+
+            /* Video elements (Hidden on mobile by default) */
+            .pc-video-bg {
+                display: none;
+            }
+            .pc-video-overlay {
+                display: none;
             }
 
             .highlight {
@@ -789,6 +797,34 @@ const feedsConfig = [
                 .mobile-view {
                     display: none;
                 }
+
+                /* PC Background Layout Override */
+                .bg-dark-wave {
+                    background-image: none;
+                }
+
+                .pc-video-bg {
+                    display: block;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    object-fit: cover;
+                    z-index: -2;
+                }
+
+                .pc-video-overlay {
+                    display: block;
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: rgba(0, 0, 0, 0.3);
+                    z-index: -1;
+                }
+
                 .pc-view {
                     display: flex;
                     flex-direction: column;
@@ -863,8 +899,19 @@ const feedsConfig = [
         </style>
     </head>
     <body>
-        <!-- 1. Background -->
+        <!-- 1. Background (Image for Mobile, Video for PC) -->
         <div class="bg-dark-wave"></div>
+        <video
+            class="pc-video-bg"
+            autoplay
+            muted
+            loop
+            playsinline
+            poster="/assets/background.png"
+        >
+            <source src="/assets/Background_영상.mp4" type="video/mp4" />
+        </video>
+        <div class="pc-video-overlay"></div>
 
         <!-- 2. PC View (>= 768px) -->
         <div class="pc-view">
