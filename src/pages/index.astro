@@ -152,8 +152,6 @@ const urls = [
     "https://www.yna.co.kr/rss/economy.xml",
     "https://www.yna.co.kr/rss/society.xml",
     "https://www.yna.co.kr/rss/international.xml",
-    "https://apnews.com/world-news.rss",
-    "https://feeds.bbci.co.uk/news/rss.xml",
     "https://rss.donga.com/total.xml",
     "https://www.khan.co.kr/rss/rssdata/total_news.xml",
     "https://www.hankyung.com/feed/all-news",
@@ -179,33 +177,25 @@ const yonhapInt =
     results[3].status === "fulfilled" && results[3].value
         ? results[3].value
         : null;
-const ap =
+const donga =
     results[4].status === "fulfilled" && results[4].value
         ? results[4].value
         : null;
-const bbc =
+const khan =
     results[5].status === "fulfilled" && results[5].value
         ? results[5].value
         : null;
-const donga =
+const hankyung =
     results[6].status === "fulfilled" && results[6].value
         ? results[6].value
         : null;
-const khan =
+const hani =
     results[7].status === "fulfilled" && results[7].value
         ? results[7].value
         : null;
-const hankyung =
+const ohmynews =
     results[8].status === "fulfilled" && results[8].value
         ? results[8].value
-        : null;
-const hani =
-    results[9].status === "fulfilled" && results[9].value
-        ? results[9].value
-        : null;
-const ohmynews =
-    results[10].status === "fulfilled" && results[10].value
-        ? results[10].value
         : null;
 
 const feedsConfig = [
@@ -243,22 +233,22 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 5-6. WORLD (AP News, BBC)
+    // 5-6. YONHAP INT (Replaces WORLD)
     {
-        data: ap ? ap[0] : null,
-        source: "AP News",
-        badge: "WORLD",
-        bg: "#fff",
+        data: yonhapInt ? yonhapInt[1] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
         text: "#000",
-        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
-        data: bbc ? bbc[0] : null,
-        source: "BBC",
-        badge: "WORLD",
-        bg: "#fff",
+        data: yonhapInt ? yonhapInt[2] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
         text: "#000",
-        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     // 7-12. Right/Left split
     {
@@ -344,22 +334,22 @@ const feedsConfig = [
         text: "#000",
         grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
-    // 17-18. WORLD (AP News, BBC)
+    // 17-18. YONHAP INT (Replaces WORLD)
     {
-        data: ap ? ap[1] : null,
-        source: "AP News",
-        badge: "WORLD",
-        bg: "#fff",
+        data: yonhapInt ? yonhapInt[4] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
         text: "#000",
-        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     {
-        data: bbc ? bbc[1] : null,
-        source: "BBC",
-        badge: "WORLD",
-        bg: "#fff",
+        data: yonhapInt ? yonhapInt[5] : null,
+        source: "연합뉴스",
+        badge: "국제",
+        bg: "#0ffd02",
         text: "#000",
-        grad: "linear-gradient(135deg, #111, #0a0e0a)",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
     },
     // 19-24. Right/Left split
     {
@@ -537,7 +527,7 @@ const feedsConfig = [
 
             /* Header / Logo */
             #mobile-header {
-                padding: 16px 24px;
+                padding: 0 24px 16px 24px;
                 display: flex;
                 justify-content: flex-start;
                 align-items: flex-end; /* Baseline match */
@@ -1005,7 +995,7 @@ const feedsConfig = [
                             const hasData =
                                 feed.data && feed.data.title !== "제목 없음";
                             const hasImage = hasData && feed.data.imageUrl;
-                            const isHidden = index >= 10;
+                            const isHidden = index >= 12;
                             return (
                                 <>
                                     {index === 6 && (
