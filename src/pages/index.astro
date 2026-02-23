@@ -537,7 +537,82 @@
                         </div>
                     </article>
 
-                    <!-- Card 4: RIGHT -->
+                    <!-- Card 4: Reuters -->
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div
+                                class="news-badge"
+                                style="background-color: #fff; color: #000;"
+                            >
+                                WORLD
+                            </div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #222, #0a0e0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">로이터 주요 속보</h3>
+                            <div class="news-meta">
+                                <span>Reuters</span>
+                                <span class="news-time" data-minutes="60"
+                                    >1시간 전</span
+                                >
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 5: AP News -->
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div
+                                class="news-badge"
+                                style="background-color: #fff; color: #000;"
+                            >
+                                WORLD
+                            </div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #111, #0a0e0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">AP 탑 뉴스</h3>
+                            <div class="news-meta">
+                                <span>AP News</span>
+                                <span class="news-time" data-minutes="120"
+                                    >2시간 전</span
+                                >
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 6: NHK World -->
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div
+                                class="news-badge"
+                                style="background-color: #fff; color: #000;"
+                            >
+                                WORLD
+                            </div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #333, #0a0e0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">NHK 글로벌 뉴스</h3>
+                            <div class="news-meta">
+                                <span>NHK World</span>
+                                <span class="news-time" data-minutes="120"
+                                    >2시간 전</span
+                                >
+                            </div>
+                        </div>
+                    </article>
+
+                    <!-- Card 7: RIGHT -->
                     <article class="news-card">
                         <div class="news-image">
                             <div
@@ -564,7 +639,7 @@
                         </div>
                     </article>
 
-                    <!-- Card 5: LEFT -->
+                    <!-- Card 8: LEFT -->
                     <article class="news-card">
                         <div class="news-image">
                             <div
@@ -740,33 +815,47 @@
                 cards.forEach((card) => card.classList.add("loading-skeleton"));
 
                 const yonhapUrl = "https://www.yna.co.kr/rss/news.xml";
+                const reutersUrl = "https://www.rss.reuters.com/news/topNews";
+                const apUrl = "https://rsshub.app/apnews/topics/apf-topnews";
+                const nhkUrl = "https://www3.nhk.or.jp/rss/news/cat0.xml";
                 const joinsUrl = "https://rss.joins.com/joins_news_list.xml";
                 const khanUrl =
                     "https://www.khan.co.kr/rss/rssdata/total_news.xml";
 
                 let yonhap = [],
+                    reuters = [],
+                    ap = [],
+                    nhk = [],
                     joins = [],
                     khan = [];
 
                 try {
                     const result = await Promise.all([
                         fetchRSS(yonhapUrl),
+                        fetchRSS(reutersUrl),
+                        fetchRSS(apUrl),
+                        fetchRSS(nhkUrl),
                         fetchRSS(joinsUrl),
                         fetchRSS(khanUrl),
                     ]);
                     yonhap = result[0];
-                    joins = result[1];
-                    khan = result[2];
+                    reuters = result[1];
+                    ap = result[2];
+                    nhk = result[3];
+                    joins = result[4];
+                    khan = result[5];
                 } catch (e) {
                     console.error("Failed to load RSS data", e);
                 }
 
-                // 카드 매핑 (0,1,2: 연합 / 3: 중앙 / 4: 경향)
-                // 연합뉴스 0번 누락/이슈 대비 첫번째 아이템부터 정상적으로 바인딩
+                // 카드 매핑 (0,1,2: 연합 / 3: Reuters / 4: AP / 5: NHK / 6: 중앙 / 7: 경향)
                 const feeds = [
                     yonhap[0],
                     yonhap[1],
                     yonhap[2],
+                    reuters[0],
+                    ap[0],
+                    nhk[0],
                     joins[0],
                     khan[0],
                 ];
