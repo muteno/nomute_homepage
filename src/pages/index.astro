@@ -160,6 +160,13 @@ const urls = [
     "https://newstapa.org/feed",
     "https://www.pressian.com/api/v3/articles/rss",
     "https://www.edaily.co.kr/rss/edaily_all.xml",
+    "https://www.newsis.com/RSS/politics.xml",
+    "https://www.newsis.com/RSS/economy.xml",
+    "https://www.newsis.com/RSS/society.xml",
+    "https://www.newsis.com/RSS/international.xml",
+    "https://www.kmib.co.kr/rss/data/kmibRssAll.xml",
+    "https://www.mk.co.kr/rss/40300001/",
+    "https://www.nocutnews.co.kr/rss/news",
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
@@ -211,6 +218,34 @@ const pressian =
 const edaily =
     results[11].status === "fulfilled" && results[11].value
         ? results[11].value
+        : null;
+const newsisPol =
+    results[12].status === "fulfilled" && results[12].value
+        ? results[12].value
+        : null;
+const newsisEco =
+    results[13].status === "fulfilled" && results[13].value
+        ? results[13].value
+        : null;
+const newsisSoc =
+    results[14].status === "fulfilled" && results[14].value
+        ? results[14].value
+        : null;
+const newsisInt =
+    results[15].status === "fulfilled" && results[15].value
+        ? results[15].value
+        : null;
+const kmib =
+    results[16].status === "fulfilled" && results[16].value
+        ? results[16].value
+        : null;
+const mk =
+    results[17].status === "fulfilled" && results[17].value
+        ? results[17].value
+        : null;
+const nocut =
+    results[18].status === "fulfilled" && results[18].value
+        ? results[18].value
         : null;
 
 const feedsConfig = [
@@ -675,6 +710,80 @@ const feedsConfig = [
         bg: "#FF3B3B",
         text: "#fff",
         grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+
+    // --- BATCH 6 (Cards 54-61) ---
+    {
+        batch: 6,
+        data: newsisPol ? newsisPol[0] : null,
+        source: "뉴시스",
+        badge: "정치",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newsisEco ? newsisEco[0] : null,
+        source: "뉴시스",
+        badge: "경제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newsisSoc ? newsisSoc[0] : null,
+        source: "뉴시스",
+        badge: "사회",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newsisInt ? newsisInt[0] : null,
+        source: "뉴시스",
+        badge: "국제",
+        bg: "#0ffd02",
+        text: "#000",
+        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: kmib ? kmib[0] : null,
+        source: "국민일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: newstapa ? newstapa[0] : null,
+        source: "뉴스타파",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: mk ? mk[0] : null,
+        source: "매일경제",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 6,
+        data: nocut ? nocut[0] : null,
+        source: "노컷뉴스",
+        badge: "LEFT",
+        bg: "#3B7BFF",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
     },
 ];
 ---
@@ -1427,7 +1536,8 @@ const feedsConfig = [
                                     </article>
                                     {(index === 19 ||
                                         index === 29 ||
-                                        index === 39) && (
+                                        index === 39 ||
+                                        index === 60) && (
                                         <div
                                             class="instagram-cta"
                                             data-batch={feed.batch}
@@ -1589,7 +1699,7 @@ const feedsConfig = [
             // Load More Button Logic (Intersection Observer)
             const floatingBtn = document.getElementById("floating-load-more");
             let currentBatch = 1;
-            const maxBatch = 5;
+            const maxBatch = 6;
 
             if (floatingBtn) {
                 const observer = new IntersectionObserver(
