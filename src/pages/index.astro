@@ -1107,6 +1107,17 @@ const feedsConfig = [
                 transform: translate(-50%, -50%) scale(0.92);
             }
 
+            #scroll-progress {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                height: 2px;
+                width: 0%;
+                background: #0ffd02;
+                z-index: 1001;
+                transition: width 0.1s linear;
+            }
+
             /* Footer */
             footer {
                 padding: 40px 24px 60px;
@@ -1260,6 +1271,7 @@ const feedsConfig = [
                             >현명한 당신을 위합니다.</span
                         >
                     </div>
+                    <div id="scroll-progress"></div>
                 </header>
 
                 <section class="hero">
@@ -1477,6 +1489,34 @@ const feedsConfig = [
                     { passive: true },
                 );
             }
+
+            const progressBar = document.getElementById("scroll-progress");
+
+            window.addEventListener(
+                "scroll",
+                () => {
+                    const scrollTop = window.scrollY;
+                    const docHeight =
+                        document.documentElement.scrollHeight -
+                        window.innerHeight;
+
+                    // 헤더가 sticky 상태일 때만 표시 (스크롤 시작 후)
+                    if (scrollTop > 100) {
+                        const progress = (scrollTop / docHeight) * 100;
+                        if (progressBar) {
+                            progressBar.style.width =
+                                Math.min(progress, 100) + "%";
+                            progressBar.style.opacity = "1";
+                        }
+                    } else {
+                        if (progressBar) {
+                            progressBar.style.opacity = "0";
+                            progressBar.style.width = "0%";
+                        }
+                    }
+                },
+                { passive: true },
+            );
 
             // Load More Button Logic (Intersection Observer)
             const floatingBtn = document.getElementById("floating-load-more");
