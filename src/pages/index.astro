@@ -1118,6 +1118,19 @@ const feedsConfig = [
                 transition: width 0.1s linear;
             }
 
+            #hero-datetime {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                font-family: "Noto Sans KR", sans-serif;
+                font-size: 12px;
+                color: #ffffff;
+                z-index: 10;
+            }
+            #hero-datetime .accent {
+                color: #0ffd02;
+            }
+
             /* Footer */
             footer {
                 padding: 40px 24px 60px;
@@ -1275,6 +1288,7 @@ const feedsConfig = [
                 </header>
 
                 <section class="hero">
+                    <div id="hero-datetime"></div>
                     <h1>
                         <span class="highlight">Breaking</span><br />The
                         Silence.<br />Speak the <span class="highlight"
@@ -1456,11 +1470,11 @@ const feedsConfig = [
                         class="footer-logo"
                         style="font-family: 'Noto Sans KR', sans-serif; font-weight: 900;"
                     >
-                        노뮤트 매거진
+                        노뮤트
                     </div>
                     <p>ⓒ 2025-26. No_mute. All rights reserved.</p>
                     <p style="margin-top: 8px; opacity: 0.5;">
-                        Break the silence. Speak the truth.
+                        Breaking the silence. Speak the truth.
                     </p>
                 </footer>
             </div>
@@ -1492,6 +1506,24 @@ const feedsConfig = [
 
             const progressBar = document.getElementById("scroll-progress");
 
+            function updateDateTime() {
+                const now = new Date();
+                const year = now.getFullYear();
+                const dd = String(now.getDate()).padStart(2, "0");
+                const mm = String(now.getMonth() + 1).padStart(2, "0");
+                const hh = String(now.getHours()).padStart(2, "0");
+                const min = String(now.getMinutes()).padStart(2, "0");
+                const days = ["일", "월", "화", "수", "목", "금", "토"];
+                const day = days[now.getDay()];
+
+                const heroDateTime = document.getElementById("hero-datetime");
+                if (heroDateTime) {
+                    heroDateTime.innerHTML = `${year}-<span class="accent">${dd}-${mm}</span> ${day} ${hh}:${min}`;
+                }
+            }
+            updateDateTime();
+            setInterval(updateDateTime, 60000);
+
             window.addEventListener(
                 "scroll",
                 () => {
@@ -1513,6 +1545,14 @@ const feedsConfig = [
                             progressBar.style.opacity = "0";
                             progressBar.style.width = "0%";
                         }
+                    }
+
+                    // 히어로 로고 대칭 우측 상단 날짜 (헤더 고정되면 숨김)
+                    const el = document.getElementById("hero-datetime");
+                    const header = document.getElementById("mobile-header");
+                    if (el && header) {
+                        const headerRect = header.getBoundingClientRect();
+                        el.style.opacity = headerRect.top <= 0 ? "0" : "1";
                     }
                 },
                 { passive: true },
