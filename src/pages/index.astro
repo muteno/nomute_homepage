@@ -15,21 +15,41 @@
             name="description"
             content="No Mute - 불편한 진실을 대면할 현명한 당신을 위합니다."
         />
-        <!-- Pretendard Font -->
+
+        <!-- Noto Sans KR Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
+            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap"
             rel="stylesheet"
-            as="style"
-            crossorigin
-            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
         />
+
         <style>
+            /* Custom Local Fonts */
+            @font-face {
+                font-family: "LEMONMILK";
+                src: url("/fonts/LEMONMILK-Bold.otf") format("opentype");
+                font-weight: bold;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: "Whitney";
+                src: url("/fonts/whitney-bold.otf") format("opentype");
+                font-weight: bold;
+                font-style: normal;
+            }
+
             :root {
-                --bg-base: #020202;
+                --bg-base: #020402; /* Extremely dark green/black base */
                 --accent-green: #0ffd02;
                 --text-main: #ffffff;
                 --text-muted: #aaaaaa;
-                --card-bg: rgba(20, 20, 20, 0.6);
-                --border-color: rgba(255, 255, 255, 0.1);
+                --card-bg: rgba(20, 20, 20, 0.4);
+                --border-color: rgba(255, 255, 255, 0.08);
+                --font-stack:
+                    "LEMONMILK", "Whitney", "Noto Sans KR", sans-serif;
+                --font-kr: "Noto Sans KR", sans-serif;
             }
 
             * {
@@ -40,13 +60,7 @@
             }
 
             body {
-                font-family:
-                    "Pretendard Variable",
-                    Pretendard,
-                    -apple-system,
-                    BlinkMacSystemFont,
-                    system-ui,
-                    sans-serif;
+                font-family: var(--font-stack);
                 background-color: var(--bg-base);
                 color: var(--text-main);
                 line-height: 1.5;
@@ -54,7 +68,7 @@
                 overflow-x: hidden;
             }
 
-            /* 1) Dark Abstract Gradient Wave Background (CSS Only) */
+            /* 1. CSS-Only Dark Green Abstract Wave Background */
             .bg-dark-wave {
                 position: fixed;
                 top: 0;
@@ -62,36 +76,68 @@
                 right: 0;
                 bottom: 0;
                 z-index: -1;
-                background: #020202;
+                background: var(--bg-base);
                 overflow: hidden;
             }
+
             .bg-dark-wave::before {
                 content: "";
                 position: absolute;
-                width: 150vw;
+                width: 200vw;
                 height: 150vh;
                 top: -25vh;
-                left: -25vw;
+                left: -50vw;
                 background:
                     radial-gradient(
-                        ellipse at 20% 40%,
-                        rgba(15, 253, 2, 0.1) 0%,
+                        ellipse at 30% 60%,
+                        rgba(15, 253, 2, 0.08) 0%,
+                        transparent 45%
+                    ),
+                    radial-gradient(
+                        ellipse at 80% 30%,
+                        rgba(15, 253, 2, 0.05) 0%,
                         transparent 40%
                     ),
                     radial-gradient(
-                        ellipse at 80% 70%,
-                        rgba(15, 253, 2, 0.05) 0%,
-                        transparent 50%
-                    ),
-                    radial-gradient(
                         circle at 50% 10%,
-                        rgba(30, 30, 35, 0.6) 0%,
-                        transparent 50%
+                        rgba(20, 25, 20, 0.8) 0%,
+                        transparent 60%
                     );
-                filter: blur(90px);
-                opacity: 0.9;
-                animation: drift 25s infinite alternate ease-in-out;
+                filter: blur(80px);
+                opacity: 0.8;
+                animation: drift 20s infinite alternate ease-in-out;
+                transform-origin: center;
             }
+
+            /* Create sweeping wave layers with pseudo elements */
+            .wave-layer {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                opacity: 0.15;
+                background: radial-gradient(
+                    150% 100% at 50% 0%,
+                    transparent 40%,
+                    rgba(15, 253, 2, 0.1) 80%,
+                    #000 100%
+                );
+                transform: skewY(-15deg) scaleY(1.5);
+                z-index: -1;
+            }
+
+            .wave-layer:nth-child(2) {
+                opacity: 0.1;
+                transform: skewY(10deg) scaleY(1.2) translateY(20%);
+                background: radial-gradient(
+                    120% 100% at 0% 100%,
+                    transparent 30%,
+                    rgba(15, 253, 2, 0.15) 80%,
+                    #000 100%
+                );
+            }
+
             .bg-dark-wave::after {
                 content: "";
                 position: absolute;
@@ -99,29 +145,32 @@
                 left: 0;
                 right: 0;
                 bottom: 0;
-                background:
-                    linear-gradient(
-                        180deg,
-                        transparent 0%,
-                        rgba(0, 0, 0, 0.8) 100%
-                    ),
-                    radial-gradient(
-                        120% 100% at 50% 0%,
-                        transparent 40%,
-                        #000 100%
-                    );
+                background: linear-gradient(
+                    180deg,
+                    rgba(0, 0, 0, 0.4) 0%,
+                    rgba(0, 0, 0, 0.95) 100%
+                );
             }
+
             @keyframes drift {
                 0% {
-                    transform: rotate(-3deg) scale(1);
+                    transform: rotate(-2deg) scale(1) translate(0, 0);
+                }
+                50% {
+                    transform: rotate(1deg) scale(1.05) translate(2vw, 2vh);
                 }
                 100% {
-                    transform: rotate(3deg) scale(1.1);
+                    transform: rotate(3deg) scale(1.1) translate(-1vw, -1vh);
                 }
             }
 
             .highlight {
                 color: var(--accent-green);
+            }
+
+            /* Force Korean font where appropriate without breaking English fonts */
+            .kor {
+                font-family: var(--font-kr);
             }
 
             /* VIEW TOGGLE */
@@ -158,7 +207,7 @@
                 z-index: 100;
                 background: linear-gradient(
                     180deg,
-                    rgba(0, 0, 0, 0.9) 0%,
+                    rgba(2, 4, 2, 0.9) 0%,
                     transparent 100%
                 );
             }
@@ -169,24 +218,26 @@
 
             /* Hero */
             .hero {
-                padding: 40px 24px 20px;
+                padding: 40px 24px 30px;
                 text-align: left;
             }
             .hero h1 {
-                font-size: 48px;
-                font-weight: 900;
+                font-family: "LEMONMILK", sans-serif;
+                font-size: 46px;
                 line-height: 1.1;
                 margin-bottom: 24px;
                 letter-spacing: -1px;
                 text-transform: uppercase;
             }
-            .hero p {
+            .hero p.sub-copy {
+                font-family: var(--font-kr);
                 font-size: 16px;
                 font-weight: 400;
-                color: rgba(255, 255, 255, 0.8);
+                color: rgba(255, 255, 255, 0.85);
                 letter-spacing: -0.5px;
                 word-break: keep-all;
                 margin-bottom: 40px;
+                line-height: 1.5;
             }
 
             /* News Cards */
@@ -200,7 +251,8 @@
                 display: flex;
                 align-items: center;
                 gap: 8px;
-                letter-spacing: -0.5px;
+                letter-spacing: 0.5px;
+                font-family: "LEMONMILK", sans-serif;
             }
             .section-title::before {
                 content: "";
@@ -215,8 +267,8 @@
                 border-radius: 16px;
                 overflow: hidden;
                 margin-bottom: 20px;
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
                 transition:
                     transform 0.2s ease,
                     border-color 0.3s ease;
@@ -228,7 +280,7 @@
             .news-image {
                 width: 100%;
                 height: 200px;
-                background-color: #111;
+                background-color: #0a0e0a;
                 position: relative;
             }
             .news-badge {
@@ -239,7 +291,7 @@
                 color: #000;
                 padding: 4px 10px;
                 font-size: 12px;
-                font-weight: 800;
+                font-family: "LEMONMILK", sans-serif;
                 border-radius: 4px;
                 text-transform: uppercase;
             }
@@ -247,6 +299,7 @@
                 padding: 20px;
             }
             .news-title {
+                font-family: var(--font-kr);
                 font-size: 18px;
                 font-weight: 700;
                 margin-bottom: 12px;
@@ -255,6 +308,7 @@
                 letter-spacing: -0.5px;
             }
             .news-meta {
+                font-family: var(--font-kr);
                 font-size: 13px;
                 color: var(--text-muted);
                 display: flex;
@@ -264,20 +318,21 @@
             /* Instagram CTA */
             .instagram-cta {
                 margin: 20px 24px 60px;
-                background: rgba(20, 20, 20, 0.8);
-                border: 1px solid rgba(15, 253, 2, 0.3);
+                background: rgba(20, 25, 20, 0.6);
+                border: 1px solid rgba(15, 253, 2, 0.4);
                 border-radius: 20px;
                 padding: 40px 24px;
                 text-align: center;
-                backdrop-filter: blur(10px);
+                backdrop-filter: blur(12px);
             }
             .instagram-cta h2 {
+                font-family: "LEMONMILK", sans-serif;
                 font-size: 24px;
-                font-weight: 800;
                 margin-bottom: 12px;
                 color: #fff;
             }
             .instagram-cta p {
+                font-family: var(--font-kr);
                 font-size: 15px;
                 margin-bottom: 28px;
                 color: var(--text-muted);
@@ -292,6 +347,7 @@
                 padding: 16px 32px;
                 border-radius: 30px;
                 font-weight: 800;
+                font-family: "LEMONMILK", sans-serif;
                 font-size: 16px;
                 transition: all 0.3s ease;
                 letter-spacing: -0.5px;
@@ -310,10 +366,11 @@
                 color: var(--text-muted);
                 font-size: 13px;
                 text-align: center;
+                font-family: "Whitney", var(--font-kr);
             }
             .footer-logo {
                 font-size: 18px;
-                font-weight: 900;
+                font-family: "LEMONMILK", sans-serif;
                 margin-bottom: 12px;
             }
             .footer-logo span {
@@ -334,66 +391,131 @@
                     text-align: center;
                     z-index: 10;
                     position: relative;
+                    padding: 40px;
+                }
+
+                .pc-main-copy {
+                    font-family: "LEMONMILK", sans-serif;
+                    font-size: 72px;
+                    line-height: 1.1;
+                    margin-bottom: 60px;
+                    text-transform: uppercase;
+                    letter-spacing: -1.5px;
+                }
+
+                .pc-logo-container {
+                    margin-bottom: 40px;
                 }
                 .pc-logo-container img {
-                    height: 50px;
-                    margin-bottom: 30px;
+                    height: 40px;
+                    width: auto;
                 }
-                .pc-message {
-                    font-size: 24px;
-                    font-weight: 700;
-                    color: #fff;
-                    margin-bottom: 40px;
+
+                .pc-sub-copy {
+                    font-family: var(--font-kr);
+                    font-size: 20px;
+                    font-weight: 400;
+                    color: rgba(255, 255, 255, 0.85);
+                    margin-bottom: 60px;
                     letter-spacing: -0.5px;
                 }
-                .qr-container {
-                    background: #fff;
-                    padding: 20px;
-                    border-radius: 16px;
-                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-                    display: inline-block;
+
+                .pc-glass-box {
+                    background: rgba(255, 255, 255, 0.03);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-radius: 24px;
+                    padding: 40px 60px;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                    max-width: 500px;
+                }
+
+                .pc-glass-text {
+                    font-family: var(--font-kr);
+                    font-size: 16px;
+                    color: var(--text-main);
+                    font-weight: 400;
+                    margin-bottom: 24px;
+                    line-height: 1.6;
+                    word-break: keep-all;
+                    letter-spacing: -0.5px;
+                }
+
+                .pc-qr-img {
+                    width: 200px;
+                    height: 200px;
+                    border-radius: 12px;
+                    object-fit: contain;
+                    /* Add a subtle green glow matching the vibe */
+                    box-shadow: 0 0 20px rgba(15, 253, 2, 0.15);
                 }
             }
         </style>
     </head>
     <body>
         <!-- 1. Background -->
-        <div class="bg-dark-wave"></div>
+        <div class="bg-dark-wave">
+            <div class="wave-layer"></div>
+            <div class="wave-layer"></div>
+        </div>
 
-        <!-- 2. PC View (> 768px) -->
+        <!-- 2. PC View (>= 768px) -->
         <div class="pc-view">
+            <!-- 2.1 Main Copy -->
+            <h1 class="pc-main-copy">
+                THE <span class="highlight">VOICE</span> OF<br />
+                THE <span class="highlight">UNHEARD</span>.
+            </h1>
+
+            <!-- 2.2 Logo -->
             <div class="pc-logo-container">
-                <!-- Used imported logo image directly -->
-                <img src="/assets/logo_투명.png" alt="No Mute Logo" />
+                <img src="/assets/logo.png" alt="No Mute Logo" />
             </div>
-            <div class="pc-message">모바일에서 접속해주세요</div>
-            <div class="qr-container">
-                <div id="qrcode"></div>
+
+            <!-- 2.3 Sub Copy -->
+            <p class="pc-sub-copy kor">
+                불편한 진실을 대면할 현명한 당신을 위합니다.
+            </p>
+
+            <!-- 2.4 Glassmorphism QR Box -->
+            <div class="pc-glass-box">
+                <p class="pc-glass-text kor">
+                    본 사이트는 모바일 환경에 최적화된 공간입니다.<br />아래
+                    QR코드를 통해 모바일로 접속해주세요
+                </p>
+                <img
+                    src="/assets/qr_instagram.png"
+                    alt="QR Code to Instagram"
+                    class="pc-qr-img"
+                />
             </div>
         </div>
 
-        <!-- 3. Mobile View (<= 767px) -->
+        <!-- 3. Mobile View (< 768px) -->
         <div class="mobile-view">
             <div class="mobile-container">
                 <header>
-                    <!-- Header Logo Image -->
                     <img
-                        src="/assets/logo_투명.png"
+                        src="/assets/logo.png"
                         alt="No Mute"
                         class="logo-img"
                     />
                 </header>
 
-                <!-- Hero Section -->
                 <section class="hero">
                     <h1>
                         THE <span class="highlight">VOICE</span><br />OF THE<br
                         /><span class="highlight">UNHEARD</span>.
                     </h1>
-                    <p>불편한 진실을 대면할 현명한 당신을 위합니다.</p>
+                    <p class="sub-copy">
+                        불편한 진실을 대면할 현명한 당신을 위합니다.
+                    </p>
                 </section>
 
-                <!-- Latest News (Cards in Korean) -->
                 <section class="latest-news">
                     <h2 class="section-title">LATEST DROPS</h2>
 
@@ -401,7 +523,7 @@
                         <div class="news-image">
                             <div class="news-badge">Breaking</div>
                             <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f1f1f, #0a0a0a);"
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f251f, #0a0e0a);"
                             >
                             </div>
                         </div>
@@ -421,12 +543,12 @@
                         <div class="news-image">
                             <div
                                 class="news-badge"
-                                style="background-color: #3b82f6; color: #fff;"
+                                style="background-color: var(--accent-green); color: #000;"
                             >
                                 Culture
                             </div>
                             <div
-                                style="width:100%; height:100%; background: linear-gradient(135deg, #182848, #0a0a0a);"
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #0f1a0f, #0a0e0a);"
                             >
                             </div>
                         </div>
@@ -443,10 +565,9 @@
                     </article>
                 </section>
 
-                <!-- Instagram CTA -->
                 <section class="instagram-cta">
                     <h2>JOIN THE MOVEMENT</h2>
-                    <p>
+                    <p class="kor">
                         Instagram에서 NO MUTE의 독점 스토리와 가장 빠른 최신
                         이슈 업데이트를 확인하세요.
                     </p>
@@ -458,9 +579,7 @@
                     >
                 </section>
 
-                <!-- Footer -->
                 <footer>
-                    <!-- Footer Text uses text highlight for 'NO' -->
                     <div class="footer-logo"><span>NO</span> MUTE NEWS</div>
                     <p>&copy; 2026 No Mute Media. All rights reserved.</p>
                     <p style="margin-top: 8px; opacity: 0.5;">
@@ -470,30 +589,8 @@
             </div>
         </div>
 
-        <!-- QR Code Script & Interactions -->
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
-        ></script>
+        <!-- Interactions -->
         <script>
-            // Use ResizeObserver or matchMedia to avoid creating Multiple QRCodes
-            const qrContainer = document.getElementById("qrcode");
-
-            function initQR() {
-                if (window.innerWidth >= 768 && qrContainer.innerHTML === "") {
-                    new QRCode(qrContainer, {
-                        text: "https://instagram.com/no_mute",
-                        width: 160,
-                        height: 160,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H,
-                    });
-                }
-            }
-
-            initQR();
-            window.addEventListener("resize", initQR);
-
             // Mobile card tap interactions
             const cards = document.querySelectorAll(".news-card");
             cards.forEach((card) => {
