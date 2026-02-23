@@ -460,7 +460,7 @@
                         >
                     </p>
                     <a
-                        href="mailto:muteno@pm.me"
+                        href="mailto:nomute.dictate754@passinbox.com"
                         style="display: block; margin-top: -12px; text-align: left; font-size: 13px; color: #BBBBBB; text-decoration: none; line-height: 1.5;"
                     >
                         <span
@@ -468,7 +468,7 @@
                             >Contact me</span
                         ><br />
                         <span style="font-weight: normal;"
-                            >mail: muteno@pm.me</span
+                            >mail: nomute.dictate754@passinbox.com</span
                         >
                     </a>
                 </section>
@@ -737,33 +737,66 @@
                 return "";
             }
 
-            // RSS 피드 가져오기 (CORS 우회 Proxy 사용)
-            async function fetchRSS(url) {
+            // timeout fetch
+            async function fetchWithTimeout(url, timeoutMs) {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(
+                    () => controller.abort(),
+                    timeoutMs,
+                );
                 try {
-                    const proxyUrl =
-                        "https://api.allorigins.win/raw?url=" +
-                        encodeURIComponent(url);
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error("Network response error");
-                    const text = await response.text();
+                    const response = await fetch(url, {
+                        signal: controller.signal,
+                    });
+                    clearTimeout(timeoutId);
+                    return response;
+                } catch (error) {
+                    clearTimeout(timeoutId);
+                    throw error;
+                }
+            }
 
+            // RSS 피드 가져오기 (CORS 우회 Proxy 사용 및 Fallback 설정)
+            async function fetchRSS(url) {
+                const proxy1 = "https://api.allorigins.win/raw?url=";
+                const proxy2 = "https://corsproxy.io/?";
+                let text = "";
+
+                try {
+                    // 1순위: allorigins (3초 timeout)
+                    const response = await fetchWithTimeout(
+                        proxy1 + encodeURIComponent(url),
+                        3000,
+                    );
+                    if (!response.ok) throw new Error("Proxy 1 error");
+                    text = await response.text();
+                } catch (e1) {
+                    // 2순위: corsproxy (3초 timeout)
+                    try {
+                        const response = await fetchWithTimeout(
+                            proxy2 + encodeURIComponent(url),
+                            3000,
+                        );
+                        if (!response.ok) throw new Error("Proxy 2 error");
+                        text = await response.text();
+                    } catch (e2) {
+                        console.error("All proxies failed for RSS:", url);
+                        return [];
+                    }
+                }
+
+                try {
                     const parser = new DOMParser();
                     const xml = parser.parseFromString(text, "text/xml");
-
-                    // 일부 RSS는 <item>이 아닌 태그명을 쓸 수도 있지만 표준은 item
                     const items = Array.from(xml.getElementsByTagName("item"));
 
                     return items.map((item) => {
                         let imageUrl = null;
-
-                        // 1. enclosure 추출 (가장 확실)
                         const enclosure =
                             item.getElementsByTagName("enclosure")[0];
                         if (enclosure && enclosure.getAttribute("url")) {
                             imageUrl = enclosure.getAttribute("url");
                         }
-
-                        // 2. media:content 추출
                         if (!imageUrl) {
                             const mediaContents =
                                 item.getElementsByTagName("media:content");
@@ -785,8 +818,6 @@
                                 }
                             }
                         }
-
-                        // 3. description img src 파싱
                         if (!imageUrl) {
                             const desc = getElementText(item, ["description"]);
                             const imgMatch = desc.match(
@@ -796,7 +827,6 @@
                                 imageUrl = imgMatch[1];
                             }
                         }
-
                         return {
                             title:
                                 getElementText(item, ["title"]) || "제목 없음",
@@ -808,7 +838,7 @@
                         };
                     });
                 } catch (error) {
-                    console.error("Error fetching RSS:", error);
+                    console.error("Error parsing RSS:", error);
                     return [];
                 }
             }
@@ -821,120 +851,105 @@
                 cards.forEach((card) => card.classList.add("loading-skeleton"));
 
                 const yonhapUrl = "https://www.yna.co.kr/rss/news.xml";
-                const reutersUrl = "https://www.rss.reuters.com/news/topNews";
-                const apUrl = "https://rsshub.app/apnews/topics/apf-topnews";
+                const reutersUrl =
+                    "https://news.google.com/rss/search?q=site:reuters.com&hl=en";
+                const apUrl =
+                    "https://news.google.com/rss/search?q=site:apnews.com&hl=en";
                 const nhkUrl = "https://www3.nhk.or.jp/rss/news/cat0.xml";
                 const joinsUrl = "https://rss.joins.com/joins_news_list.xml";
                 const khanUrl =
                     "https://www.khan.co.kr/rss/rssdata/total_news.xml";
 
-                let yonhap = [],
-                    reuters = [],
-                    ap = [],
-                    nhk = [],
-                    joins = [],
-                    khan = [];
-
-                try {
-                    const result = await Promise.all([
-                        fetchRSS(yonhapUrl),
-                        fetchRSS(reutersUrl),
-                        fetchRSS(apUrl),
-                        fetchRSS(nhkUrl),
-                        fetchRSS(joinsUrl),
-                        fetchRSS(khanUrl),
-                    ]);
-                    yonhap = result[0];
-                    reuters = result[1];
-                    ap = result[2];
-                    nhk = result[3];
-                    joins = result[4];
-                    khan = result[5];
-                } catch (e) {
-                    console.error("Failed to load RSS data", e);
-                }
-
-                // 카드 매핑 (0,1,2: 연합 / 3: Reuters / 4: AP / 5: NHK / 6: 중앙 / 7: 경향)
-                const feeds = [
-                    yonhap[0],
-                    yonhap[1],
-                    yonhap[2],
-                    reuters[0],
-                    ap[0],
-                    nhk[0],
-                    joins[0],
-                    khan[0],
+                const feedConfigs = [
+                    { url: yonhapUrl, indices: [0, 1, 2] },
+                    { url: reutersUrl, indices: [3] },
+                    { url: apUrl, indices: [4] },
+                    { url: nhkUrl, indices: [5] },
+                    { url: joinsUrl, indices: [6] },
+                    { url: khanUrl, indices: [7] },
                 ];
 
-                cards.forEach((card, i) => {
-                    card.classList.remove("loading-skeleton");
-
-                    const titleEl = card.querySelector(
-                        ".news-title",
-                    ) as HTMLElement;
-                    const timeEl = card.querySelector(
-                        ".news-time",
-                    ) as HTMLElement;
-                    const htmlCard = card as HTMLElement;
-
-                    const badge = card.querySelector(
-                        ".news-badge",
-                    ) as HTMLElement;
-                    const imgContainer = card.querySelector(
-                        ".news-image",
-                    ) as HTMLElement;
-                    const imgBg = card.querySelector(
-                        ".news-image > div:nth-child(2)",
-                    ) as HTMLElement;
-                    const contentContainer = card.querySelector(
-                        ".news-content",
-                    ) as HTMLElement;
-
-                    const data = feeds[i];
-
-                    function hideImageShowBadge() {
-                        if (badge && imgContainer && contentContainer) {
-                            badge.style.position = "static";
-                            badge.style.display = "inline-block";
-                            badge.style.marginBottom = "12px";
-                            contentContainer.insertBefore(
-                                badge,
-                                contentContainer.firstChild,
-                            );
-                            imgContainer.style.display = "none";
-                        }
+                const fetchAndRender = async (config) => {
+                    let items = [];
+                    try {
+                        items = await fetchRSS(config.url);
+                    } catch (e) {
+                        console.error("Failed to fetch", config.url);
                     }
 
-                    if (data && data.title !== "제목 없음") {
-                        titleEl.innerText = data.title;
-                        const minutes = getMinutesSince(data.pubDate);
-                        timeEl.innerText = formatTimeAgo(minutes);
+                    config.indices.forEach((cardIndex, i) => {
+                        const card = cards[cardIndex];
+                        if (!card) return;
 
-                        // 이미지 렌더링
-                        if (data.imageUrl && imgBg) {
-                            // 이미지가 있을 경우 배경 교체
-                            imgBg.style.background = `url("${data.imageUrl}") center/cover no-repeat`;
+                        card.classList.remove("loading-skeleton");
 
-                            // 이미지 로드 실패 시 대체 처리 (img 태그를 쓰는 게 아니므로 js Image 객체로 확인)
-                            const imgTest = new Image();
-                            imgTest.onerror = hideImageShowBadge;
-                            imgTest.src = data.imageUrl;
+                        const titleEl = card.querySelector(
+                            ".news-title",
+                        ) as HTMLElement;
+                        const timeEl = card.querySelector(
+                            ".news-time",
+                        ) as HTMLElement;
+                        const htmlCard = card as HTMLElement;
+
+                        const badge = card.querySelector(
+                            ".news-badge",
+                        ) as HTMLElement;
+                        const imgContainer = card.querySelector(
+                            ".news-image",
+                        ) as HTMLElement;
+                        const imgBg = card.querySelector(
+                            ".news-image > div:nth-child(2)",
+                        ) as HTMLElement;
+                        const contentContainer = card.querySelector(
+                            ".news-content",
+                        ) as HTMLElement;
+
+                        const data = items[i];
+
+                        function hideImageShowBadge() {
+                            if (badge && imgContainer && contentContainer) {
+                                badge.style.position = "static";
+                                badge.style.display = "inline-block";
+                                badge.style.marginBottom = "12px";
+                                contentContainer.insertBefore(
+                                    badge,
+                                    contentContainer.firstChild,
+                                );
+                                imgContainer.style.display = "none";
+                            }
+                        }
+
+                        if (data && data.title !== "제목 없음") {
+                            titleEl.innerText = data.title;
+                            const minutes = getMinutesSince(data.pubDate);
+                            timeEl.innerText = formatTimeAgo(minutes);
+
+                            // 이미지 렌더링
+                            if (data.imageUrl && imgBg) {
+                                imgBg.style.background = `url("${data.imageUrl}") center/cover no-repeat`;
+                                const imgTest = new Image();
+                                imgTest.onerror = hideImageShowBadge;
+                                imgTest.src = data.imageUrl;
+                            } else {
+                                hideImageShowBadge();
+                            }
+
+                            htmlCard.onclick = () => {
+                                window.open(data.link, "_blank");
+                            };
                         } else {
-                            // 이미지가 아예 파싱되지 않은 경우
+                            // 데이터 없거나 로딩 실패
+                            titleEl.innerText = "기사를 불러올 수 없습니다";
+                            timeEl.innerText = "-";
                             hideImageShowBadge();
                         }
+                    });
+                };
 
-                        // 기사 클릭 시 새 탭으로 이동 (onclick으로 대체하여 리스너 중복 방지)
-                        htmlCard.onclick = () => {
-                            window.open(data.link, "_blank");
-                        };
-                    } else {
-                        // fetch 실패 시 또는 데이터 없을 시
-                        titleEl.innerText = "뉴스를 불러오는 중입니다";
-                        timeEl.innerText = "-";
-                        hideImageShowBadge();
-                    }
-                });
+                // 독립적으로 개별 렌더링 (성공한 피드부터 먼저 표시) + 모든 상태 보장
+                await Promise.allSettled(
+                    feedConfigs.map((config) => fetchAndRender(config)),
+                );
             }
 
             // Mobile card tap interactions (hover 효과 대체)
