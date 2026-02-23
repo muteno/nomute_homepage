@@ -132,7 +132,7 @@
                 );
             }
             .logo-img {
-                height: 28px;
+                height: 84px;
                 width: auto;
             }
 
@@ -568,7 +568,7 @@
                         </div>
                     </article>
 
-                    <!-- Card 5: The Guardian -->
+                    <!-- Card 5: Google News -->
                     <article class="news-card">
                         <div class="news-image">
                             <div
@@ -583,9 +583,9 @@
                             </div>
                         </div>
                         <div class="news-content">
-                            <h3 class="news-title">Guardian 탑 뉴스</h3>
+                            <h3 class="news-title">Google News 탑 뉴스</h3>
                             <div class="news-meta">
-                                <span>Guardian</span>
+                                <span>Google News</span>
                                 <span class="news-time" data-minutes="120"
                                     >2시간 전</span
                                 >
@@ -756,6 +756,49 @@
                 }
             }
 
+            // 원본 링크에서 og:image 파싱 (Proxy 우회)
+            async function fetchOgImage(linkUrl) {
+                if (!linkUrl || linkUrl === "#") return null;
+                const proxy1 = "https://api.allorigins.win/raw?url=";
+                const proxy2 = "https://corsproxy.io/?";
+                let text = "";
+
+                try {
+                    const res = await fetchWithTimeout(
+                        proxy1 + encodeURIComponent(linkUrl),
+                        3000,
+                    );
+                    if (!res.ok) throw new Error("Fallback og proxy1 fail");
+                    text = await res.text();
+                } catch (e1) {
+                    try {
+                        const res2 = await fetchWithTimeout(
+                            proxy2 + encodeURIComponent(linkUrl),
+                            3000,
+                        );
+                        if (!res2.ok)
+                            throw new Error("Fallback og proxy2 fail");
+                        text = await res2.text();
+                    } catch (e2) {
+                        return null; // Both proxies failed
+                    }
+                }
+
+                // 메타태그 정규식 파싱
+                const ogMatch =
+                    text.match(
+                        /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i,
+                    ) ||
+                    text.match(
+                        /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i,
+                    );
+                if (ogMatch && ogMatch[1]) {
+                    // HTML 특수문자 디코딩 시도
+                    return ogMatch[1].replace(/&amp;/g, "&");
+                }
+                return null;
+            }
+
             // RSS 피드 가져오기 (CORS 우회 Proxy 사용 및 Fallback 설정)
             async function fetchRSS(url) {
                 const proxy1 = "https://api.allorigins.win/raw?url=";
@@ -788,15 +831,23 @@
                 try {
                     const parser = new DOMParser();
                     const xml = parser.parseFromString(text, "text/xml");
+
                     const items = Array.from(xml.getElementsByTagName("item"));
 
-                    return items.map((item) => {
+                    // RSS 내부 파싱 우선
+                    const parsedItems = items.map((item) => {
                         let imageUrl = null;
-                        const enclosure =
-                            item.getElementsByTagName("enclosure")[0];
-                        if (enclosure && enclosure.getAttribute("url")) {
-                            imageUrl = enclosure.getAttribute("url");
+
+                        // 1. enclosure 추출
+                        if (!imageUrl) {
+                            const enclosure =
+                                item.getElementsByTagName("enclosure")[0];
+                            if (enclosure && enclosure.getAttribute("url")) {
+                                imageUrl = enclosure.getAttribute("url");
+                            }
                         }
+
+                        // 2. media:content 추출
                         if (!imageUrl) {
                             const mediaContents =
                                 item.getElementsByTagName("media:content");
@@ -805,21 +856,27 @@
                                 mediaContents[0].getAttribute("url")
                             ) {
                                 imageUrl = mediaContents[0].getAttribute("url");
-                            } else {
-                                const contents = item.getElementsByTagNameNS(
-                                    "*",
-                                    "content",
-                                );
-                                if (
-                                    contents.length > 0 &&
-                                    contents[0].getAttribute("url")
-                                ) {
-                                    imageUrl = contents[0].getAttribute("url");
-                                }
                             }
                         }
+
+                        // 3. media:thumbnail 추출
                         if (!imageUrl) {
-                            const desc = getElementText(item, ["description"]);
+                            const mediaThumbs =
+                                item.getElementsByTagName("media:thumbnail");
+                            if (
+                                mediaThumbs.length > 0 &&
+                                mediaThumbs[0].getAttribute("url")
+                            ) {
+                                imageUrl = mediaThumbs[0].getAttribute("url");
+                            }
+                        }
+
+                        // 4. description 또는 content:encoded 파싱
+                        if (!imageUrl) {
+                            const desc = getElementText(item, [
+                                "description",
+                                "content:encoded",
+                            ]);
                             const imgMatch = desc.match(
                                 /<img[^>]+src=["']([^"']+)["']/i,
                             );
@@ -827,6 +884,7 @@
                                 imageUrl = imgMatch[1];
                             }
                         }
+
                         return {
                             title:
                                 getElementText(item, ["title"]) || "제목 없음",
@@ -837,6 +895,15 @@
                             imageUrl: imageUrl,
                         };
                     });
+
+                    // 5. 이미지가 없으면 og:image 비동기 fetch 시도 (순차적이되 await로 대기)
+                    for (let item of parsedItems) {
+                        if (!item.imageUrl && item.link !== "#") {
+                            item.imageUrl = await fetchOgImage(item.link);
+                        }
+                    }
+
+                    return parsedItems;
                 } catch (error) {
                     console.error("Error parsing RSS:", error);
                     return [];
@@ -852,7 +919,8 @@
 
                 const yonhapUrl = "https://www.yna.co.kr/rss/news.xml";
                 const bbcUrl = "https://feeds.bbci.co.uk/news/rss.xml";
-                const guardianUrl = "https://www.theguardian.com/world/rss";
+                const guardianUrl =
+                    "https://news.google.com/rss?hl=en&gl=US&ceid=US:en";
                 const nhkUrl = "https://www3.nhk.or.jp/rss/news/cat0.xml";
                 const dongaUrl = "https://rss.donga.com/total.xml";
                 const khanUrl =
