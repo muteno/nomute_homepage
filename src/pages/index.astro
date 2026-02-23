@@ -543,7 +543,7 @@
                         </div>
                     </article>
 
-                    <!-- Card 4: Reuters -->
+                    <!-- Card 4: BBC News -->
                     <article class="news-card">
                         <div class="news-image">
                             <div
@@ -558,9 +558,9 @@
                             </div>
                         </div>
                         <div class="news-content">
-                            <h3 class="news-title">로이터 주요 속보</h3>
+                            <h3 class="news-title">BBC 주요 속보</h3>
                             <div class="news-meta">
-                                <span>Reuters</span>
+                                <span>BBC</span>
                                 <span class="news-time" data-minutes="60"
                                     >1시간 전</span
                                 >
@@ -568,7 +568,7 @@
                         </div>
                     </article>
 
-                    <!-- Card 5: AP News -->
+                    <!-- Card 5: The Guardian -->
                     <article class="news-card">
                         <div class="news-image">
                             <div
@@ -583,9 +583,9 @@
                             </div>
                         </div>
                         <div class="news-content">
-                            <h3 class="news-title">AP 탑 뉴스</h3>
+                            <h3 class="news-title">Guardian 탑 뉴스</h3>
                             <div class="news-meta">
-                                <span>AP News</span>
+                                <span>Guardian</span>
                                 <span class="news-time" data-minutes="120"
                                     >2시간 전</span
                                 >
@@ -637,7 +637,7 @@
                                 정부 정책 방향성에 대한 보수 진영의 시각
                             </h3>
                             <div class="news-meta">
-                                <span>중앙일보</span>
+                                <span>동아일보</span>
                                 <span class="news-time" data-minutes="90"
                                     >1시간 전</span
                                 >
@@ -851,21 +851,19 @@
                 cards.forEach((card) => card.classList.add("loading-skeleton"));
 
                 const yonhapUrl = "https://www.yna.co.kr/rss/news.xml";
-                const reutersUrl =
-                    "https://news.google.com/rss/search?q=site:reuters.com&hl=en";
-                const apUrl =
-                    "https://news.google.com/rss/search?q=site:apnews.com&hl=en";
+                const bbcUrl = "https://feeds.bbci.co.uk/news/rss.xml";
+                const guardianUrl = "https://www.theguardian.com/world/rss";
                 const nhkUrl = "https://www3.nhk.or.jp/rss/news/cat0.xml";
-                const joinsUrl = "https://rss.joins.com/joins_news_list.xml";
+                const dongaUrl = "https://rss.donga.com/total.xml";
                 const khanUrl =
                     "https://www.khan.co.kr/rss/rssdata/total_news.xml";
 
                 const feedConfigs = [
                     { url: yonhapUrl, indices: [0, 1, 2] },
-                    { url: reutersUrl, indices: [3] },
-                    { url: apUrl, indices: [4] },
+                    { url: bbcUrl, indices: [3] },
+                    { url: guardianUrl, indices: [4] },
                     { url: nhkUrl, indices: [5] },
-                    { url: joinsUrl, indices: [6] },
+                    { url: dongaUrl, indices: [6] },
                     { url: khanUrl, indices: [7] },
                 ];
 
