@@ -10,20 +10,26 @@
             name="viewport"
             content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
-        <title>No Mute - Breaking News Channel</title>
+        <title>No Mute - THE VOICE OF THE UNHEARD.</title>
         <meta
             name="description"
-            content="No Mute News Channel - The Voice of the Unheard"
+            content="No Mute - 불편한 진실을 대면할 현명한 당신을 위합니다."
+        />
+        <!-- Pretendard Font -->
+        <link
+            rel="stylesheet"
+            as="style"
+            crossorigin
+            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css"
         />
         <style>
             :root {
-                --bg-color: #000000;
+                --bg-base: #020202;
+                --accent-green: #0ffd02;
                 --text-main: #ffffff;
-                --text-muted: #888888;
-                --accent-primary: #ffff00; /* Neon Yellow/Green vibe */
-                --accent-secondary: #ff003c; /* Cyberpunk Red */
-                --card-bg: #111111;
-                --border-color: #333333;
+                --text-muted: #aaaaaa;
+                --card-bg: rgba(20, 20, 20, 0.6);
+                --border-color: rgba(255, 255, 255, 0.1);
             }
 
             * {
@@ -35,163 +41,219 @@
 
             body {
                 font-family:
-                    "Pretendard",
+                    "Pretendard Variable",
+                    Pretendard,
                     -apple-system,
                     BlinkMacSystemFont,
                     system-ui,
-                    Roboto,
-                    "Helvetica Neue",
-                    "Segoe UI",
-                    "Apple SD Gothic Neo",
-                    "Noto Sans KR",
-                    "Malgun Gothic",
                     sans-serif;
-                background-color: var(--bg-color);
+                background-color: var(--bg-base);
                 color: var(--text-main);
                 line-height: 1.5;
                 -webkit-font-smoothing: antialiased;
                 overflow-x: hidden;
             }
 
-            /* Mobile Container to emulate mobile app feel on desktop */
+            /* 1) Dark Abstract Gradient Wave Background (CSS Only) */
+            .bg-dark-wave {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: -1;
+                background: #020202;
+                overflow: hidden;
+            }
+            .bg-dark-wave::before {
+                content: "";
+                position: absolute;
+                width: 150vw;
+                height: 150vh;
+                top: -25vh;
+                left: -25vw;
+                background:
+                    radial-gradient(
+                        ellipse at 20% 40%,
+                        rgba(15, 253, 2, 0.1) 0%,
+                        transparent 40%
+                    ),
+                    radial-gradient(
+                        ellipse at 80% 70%,
+                        rgba(15, 253, 2, 0.05) 0%,
+                        transparent 50%
+                    ),
+                    radial-gradient(
+                        circle at 50% 10%,
+                        rgba(30, 30, 35, 0.6) 0%,
+                        transparent 50%
+                    );
+                filter: blur(90px);
+                opacity: 0.9;
+                animation: drift 25s infinite alternate ease-in-out;
+            }
+            .bg-dark-wave::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background:
+                    linear-gradient(
+                        180deg,
+                        transparent 0%,
+                        rgba(0, 0, 0, 0.8) 100%
+                    ),
+                    radial-gradient(
+                        120% 100% at 50% 0%,
+                        transparent 40%,
+                        #000 100%
+                    );
+            }
+            @keyframes drift {
+                0% {
+                    transform: rotate(-3deg) scale(1);
+                }
+                100% {
+                    transform: rotate(3deg) scale(1.1);
+                }
+            }
+
+            .highlight {
+                color: var(--accent-green);
+            }
+
+            /* VIEW TOGGLE */
+            .pc-view {
+                display: none;
+            }
+            .mobile-view {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                min-height: 100vh;
+            }
+
+            /* ======== MOBILE STYLES ======== */
             .mobile-container {
+                width: 100%;
                 max-width: 480px;
                 margin: 0 auto;
-                min-height: 100vh;
-                background-color: var(--bg-color);
                 position: relative;
                 display: flex;
                 flex-direction: column;
-                border-left: 1px solid var(--border-color);
-                border-right: 1px solid var(--border-color);
+                z-index: 1;
+                padding-bottom: 60px;
             }
 
-            /* Header */
+            /* Header / Logo */
             header {
-                padding: 20px 24px;
+                padding: 24px 24px;
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 position: sticky;
                 top: 0;
-                background: rgba(0, 0, 0, 0.8);
-                backdrop-filter: blur(10px);
                 z-index: 100;
-                border-bottom: 1px solid var(--border-color);
+                background: linear-gradient(
+                    180deg,
+                    rgba(0, 0, 0, 0.9) 0%,
+                    transparent 100%
+                );
+            }
+            .logo-img {
+                height: 28px;
+                width: auto;
             }
 
-            .logo {
-                font-size: 24px;
+            /* Hero */
+            .hero {
+                padding: 40px 24px 20px;
+                text-align: left;
+            }
+            .hero h1 {
+                font-size: 48px;
                 font-weight: 900;
+                line-height: 1.1;
+                margin-bottom: 24px;
                 letter-spacing: -1px;
                 text-transform: uppercase;
             }
-
-            .logo span {
-                color: var(--accent-primary);
-            }
-
-            .menu-btn {
-                background: none;
-                border: none;
-                color: var(--text-main);
-                font-size: 24px;
-                cursor: pointer;
-            }
-
-            /* Hero Section */
-            .hero {
-                padding: 60px 24px 40px;
-                text-align: left;
-            }
-
-            .hero h1 {
-                font-size: 42px;
-                font-weight: 800;
-                line-height: 1.2;
-                margin-bottom: 16px;
-                word-break: keep-all;
-            }
-
             .hero p {
                 font-size: 16px;
-                color: var(--text-muted);
-                margin-bottom: 32px;
+                font-weight: 400;
+                color: rgba(255, 255, 255, 0.8);
+                letter-spacing: -0.5px;
                 word-break: keep-all;
+                margin-bottom: 40px;
             }
 
             /* News Cards */
             .latest-news {
                 padding: 0 24px 40px;
             }
-
             .section-title {
-                font-size: 20px;
-                font-weight: 700;
-                margin-bottom: 20px;
+                font-size: 18px;
+                font-weight: 800;
+                margin-bottom: 24px;
                 display: flex;
                 align-items: center;
                 gap: 8px;
+                letter-spacing: -0.5px;
             }
-
             .section-title::before {
                 content: "";
                 display: block;
-                width: 8px;
-                height: 20px;
-                background-color: var(--accent-primary);
+                width: 4px;
+                height: 18px;
+                background-color: var(--accent-green);
             }
-
             .news-card {
                 background-color: var(--card-bg);
                 border: 1px solid var(--border-color);
                 border-radius: 16px;
                 overflow: hidden;
                 margin-bottom: 20px;
-                transition: transform 0.2s ease;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                transition:
+                    transform 0.2s ease,
+                    border-color 0.3s ease;
             }
-
             .news-card:active {
                 transform: scale(0.98);
+                border-color: var(--accent-green);
             }
-
             .news-image {
                 width: 100%;
                 height: 200px;
-                background-color: #222;
+                background-color: #111;
                 position: relative;
             }
-
-            .news-image img {
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-            }
-
             .news-badge {
                 position: absolute;
-                top: 12px;
-                left: 12px;
-                background-color: var(--accent-secondary);
-                color: #fff;
+                top: 16px;
+                left: 16px;
+                background-color: var(--accent-green);
+                color: #000;
                 padding: 4px 10px;
                 font-size: 12px;
-                font-weight: 700;
+                font-weight: 800;
                 border-radius: 4px;
                 text-transform: uppercase;
             }
-
             .news-content {
                 padding: 20px;
             }
-
             .news-title {
                 font-size: 18px;
                 font-weight: 700;
-                margin-bottom: 8px;
+                margin-bottom: 12px;
                 line-height: 1.4;
+                color: #fff;
+                letter-spacing: -0.5px;
             }
-
             .news-meta {
                 font-size: 13px;
                 color: var(--text-muted);
@@ -202,261 +264,237 @@
             /* Instagram CTA */
             .instagram-cta {
                 margin: 20px 24px 60px;
-                background: linear-gradient(
-                    45deg,
-                    #f09433 0%,
-                    #e6683c 25%,
-                    #dc2743 50%,
-                    #cc2366 75%,
-                    #bc1888 100%
-                );
-                border-radius: 16px;
-                padding: 30px 20px;
+                background: rgba(20, 20, 20, 0.8);
+                border: 1px solid rgba(15, 253, 2, 0.3);
+                border-radius: 20px;
+                padding: 40px 24px;
                 text-align: center;
-                position: relative;
-                overflow: hidden;
+                backdrop-filter: blur(10px);
             }
-
             .instagram-cta h2 {
                 font-size: 24px;
                 font-weight: 800;
-                margin-bottom: 10px;
+                margin-bottom: 12px;
+                color: #fff;
             }
-
             .instagram-cta p {
-                font-size: 14px;
-                margin-bottom: 20px;
-                opacity: 0.9;
+                font-size: 15px;
+                margin-bottom: 28px;
+                color: var(--text-muted);
+                line-height: 1.5;
+                word-break: keep-all;
             }
-
             .btn-instagram {
                 display: inline-block;
-                background-color: #fff;
+                background-color: var(--accent-green);
                 color: #000;
                 text-decoration: none;
-                padding: 14px 32px;
+                padding: 16px 32px;
                 border-radius: 30px;
                 font-weight: 800;
                 font-size: 16px;
-                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
                 transition: all 0.3s ease;
-                text-transform: uppercase;
+                letter-spacing: -0.5px;
+                width: 100%;
+                box-sizing: border-box;
             }
-
             .btn-instagram:active {
                 transform: translateY(2px);
-                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+                opacity: 0.9;
             }
 
             /* Footer */
             footer {
-                margin-top: auto;
                 padding: 40px 24px 60px;
                 border-top: 1px solid var(--border-color);
                 color: var(--text-muted);
-                font-size: 12px;
+                font-size: 13px;
                 text-align: center;
             }
-
-            /* Utilities */
-            .gradient-text {
-                background: linear-gradient(90deg, #ffffff, var(--text-muted));
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
+            .footer-logo {
+                font-size: 18px;
+                font-weight: 900;
+                margin-bottom: 12px;
+            }
+            .footer-logo span {
+                color: var(--accent-green);
             }
 
-            .fixed-bottom-bar {
-                position: fixed;
-                bottom: 0;
-                left: 50%;
-                transform: translateX(-50%);
-                width: 100%;
-                max-width: 480px;
-                padding: 16px 24px;
-                background: rgba(17, 17, 17, 0.9);
-                backdrop-filter: blur(10px);
-                border-top: 1px solid var(--border-color);
-                display: flex;
-                gap: 12px;
-                z-index: 100;
-            }
-
-            .btn-primary {
-                flex: 1;
-                background-color: var(--accent-primary);
-                color: #000;
-                text-align: center;
-                padding: 16px;
-                border-radius: 12px;
-                font-weight: 800;
-                font-size: 16px;
-                text-decoration: none;
-                text-transform: uppercase;
-            }
-
-            .btn-outline {
-                flex: 0 0 auto;
-                background: transparent;
-                color: #fff;
-                border: 1px solid var(--border-color);
-                padding: 16px 24px;
-                border-radius: 12px;
-                font-weight: 700;
-                text-decoration: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-
-            @media (max-width: 480px) {
-                .mobile-container {
-                    border: none;
+            /* ======== PC STYLES ======== */
+            @media (min-width: 768px) {
+                .mobile-view {
+                    display: none;
+                }
+                .pc-view {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 100vh;
+                    text-align: center;
+                    z-index: 10;
+                    position: relative;
+                }
+                .pc-logo-container img {
+                    height: 50px;
+                    margin-bottom: 30px;
+                }
+                .pc-message {
+                    font-size: 24px;
+                    font-weight: 700;
+                    color: #fff;
+                    margin-bottom: 40px;
+                    letter-spacing: -0.5px;
+                }
+                .qr-container {
+                    background: #fff;
+                    padding: 20px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+                    display: inline-block;
                 }
             }
         </style>
     </head>
     <body>
-        <div class="mobile-container">
-            <!-- Header -->
-            <header>
-                <div class="logo">NO<span>MUTE</span></div>
-                <button class="menu-btn" aria-label="Menu">
-                    <svg
-                        width="24"
-                        height="24"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
-            </header>
+        <!-- 1. Background -->
+        <div class="bg-dark-wave"></div>
 
-            <!-- Hero Section -->
-            <section class="hero">
-                <h1 class="gradient-text">
-                    THE VOICE<br />OF THE<br />UNHEARD.
-                </h1>
-                <p>
-                    We break the silence. Get the latest unfiltered news and raw
-                    stories directly from the source.
-                </p>
-            </section>
-
-            <!-- Latest News -->
-            <section class="latest-news">
-                <h2 class="section-title">LATEST DROPS</h2>
-
-                <!-- Card 1 -->
-                <article class="news-card">
-                    <div class="news-image">
-                        <div class="news-badge">Breaking</div>
-                        <!-- Placeholder image with stylized gradient -->
-                        <div
-                            style="width:100%; height:100%; background: linear-gradient(to bottom, #2a2a2a, #111);"
-                        >
-                        </div>
-                    </div>
-                    <div class="news-content">
-                        <h3 class="news-title">
-                            The Silent Revolution: How underground creators are
-                            taking over
-                        </h3>
-                        <div class="news-meta">
-                            <span>By Editor Focus</span>
-                            <span>2h ago</span>
-                        </div>
-                    </div>
-                </article>
-
-                <!-- Card 2 -->
-                <article class="news-card">
-                    <div class="news-image">
-                        <div
-                            class="news-badge"
-                            style="background-color: #3b82f6;"
-                        >
-                            Culture
-                        </div>
-                        <div
-                            style="width:100%; height:100%; background: linear-gradient(to bottom, #1e3a8a, #111);"
-                        >
-                        </div>
-                    </div>
-                    <div class="news-content">
-                        <h3 class="news-title">
-                            Neon Nights: The rise of alternative aesthetic in
-                            modern fashion
-                        </h3>
-                        <div class="news-meta">
-                            <span>By Studio Zero</span>
-                            <span>5h ago</span>
-                        </div>
-                    </div>
-                </article>
-            </section>
-
-            <!-- Instagram CTA -->
-            <section class="instagram-cta">
-                <h2>JOIN THE MOVEMENT</h2>
-                <p>
-                    Follow us on Instagram for daily updates, exclusive stories,
-                    and behind-the-scenes content.
-                </p>
-                <a
-                    href="https://instagram.com"
-                    class="btn-instagram"
-                    target="_blank"
-                    rel="noopener noreferrer">@NOMUTE_OFFICIAL</a
-                >
-            </section>
-
-            <!-- Footer -->
-            <footer>
-                <div
-                    style="font-weight: 700; font-size: 16px; margin-bottom: 8px;"
-                >
-                    NO MUTE NEWS
-                </div>
-                <p>&copy; 2026 No Mute Media. All rights reserved.</p>
-                <p style="margin-top: 8px; opacity: 0.5;">
-                    Break the silence. Speak the truth.
-                </p>
-                <br /><br /><br /><br />
-                <!-- padding for fixed bottom bar -->
-            </footer>
-
-            <!-- Fixed Bottom CTA -->
-            <div class="fixed-bottom-bar">
-                <a href="#" class="btn-outline">
-                    <svg
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                    >
-                        <path
-                            d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
-                        ></path>
-                        <polyline points="22,6 12,13 2,6"></polyline>
-                    </svg>
-                </a>
-                <a href="#" class="btn-primary">SUBSCRIBE NOW</a>
+        <!-- 2. PC View (> 768px) -->
+        <div class="pc-view">
+            <div class="pc-logo-container">
+                <!-- Used imported logo image directly -->
+                <img src="/assets/logo_투명.png" alt="No Mute Logo" />
+            </div>
+            <div class="pc-message">모바일에서 접속해주세요</div>
+            <div class="qr-container">
+                <div id="qrcode"></div>
             </div>
         </div>
 
+        <!-- 3. Mobile View (<= 767px) -->
+        <div class="mobile-view">
+            <div class="mobile-container">
+                <header>
+                    <!-- Header Logo Image -->
+                    <img
+                        src="/assets/logo_투명.png"
+                        alt="No Mute"
+                        class="logo-img"
+                    />
+                </header>
+
+                <!-- Hero Section -->
+                <section class="hero">
+                    <h1>
+                        THE <span class="highlight">VOICE</span><br />OF THE<br
+                        /><span class="highlight">UNHEARD</span>.
+                    </h1>
+                    <p>불편한 진실을 대면할 현명한 당신을 위합니다.</p>
+                </section>
+
+                <!-- Latest News (Cards in Korean) -->
+                <section class="latest-news">
+                    <h2 class="section-title">LATEST DROPS</h2>
+
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div class="news-badge">Breaking</div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #1f1f1f, #0a0a0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">
+                                무언의 반란: 언더그라운드 크리에이터들이 주류를
+                                장악하는 방법
+                            </h3>
+                            <div class="news-meta">
+                                <span>에디터 포커스</span>
+                                <span>2시간 전</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="news-card">
+                        <div class="news-image">
+                            <div
+                                class="news-badge"
+                                style="background-color: #3b82f6; color: #fff;"
+                            >
+                                Culture
+                            </div>
+                            <div
+                                style="width:100%; height:100%; background: linear-gradient(135deg, #182848, #0a0a0a);"
+                            >
+                            </div>
+                        </div>
+                        <div class="news-content">
+                            <h3 class="news-title">
+                                네온 시대: 현대 패션에서 대안적 미학의 부상과
+                                시사점
+                            </h3>
+                            <div class="news-meta">
+                                <span>스튜디오 제로</span>
+                                <span>5시간 전</span>
+                            </div>
+                        </div>
+                    </article>
+                </section>
+
+                <!-- Instagram CTA -->
+                <section class="instagram-cta">
+                    <h2>JOIN THE MOVEMENT</h2>
+                    <p>
+                        Instagram에서 NO MUTE의 독점 스토리와 가장 빠른 최신
+                        이슈 업데이트를 확인하세요.
+                    </p>
+                    <a
+                        href="https://instagram.com/no_mute"
+                        class="btn-instagram"
+                        target="_blank"
+                        rel="noopener noreferrer">@no_mute 연결</a
+                    >
+                </section>
+
+                <!-- Footer -->
+                <footer>
+                    <!-- Footer Text uses text highlight for 'NO' -->
+                    <div class="footer-logo"><span>NO</span> MUTE NEWS</div>
+                    <p>&copy; 2026 No Mute Media. All rights reserved.</p>
+                    <p style="margin-top: 8px; opacity: 0.5;">
+                        Break the silence. Speak the truth.
+                    </p>
+                </footer>
+            </div>
+        </div>
+
+        <!-- QR Code Script & Interactions -->
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        ></script>
         <script>
-            // Simple interaction for cards
+            // Use ResizeObserver or matchMedia to avoid creating Multiple QRCodes
+            const qrContainer = document.getElementById("qrcode");
+
+            function initQR() {
+                if (window.innerWidth >= 768 && qrContainer.innerHTML === "") {
+                    new QRCode(qrContainer, {
+                        text: "https://instagram.com/no_mute",
+                        width: 160,
+                        height: 160,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H,
+                    });
+                }
+            }
+
+            initQR();
+            window.addEventListener("resize", initQR);
+
+            // Mobile card tap interactions
             const cards = document.querySelectorAll(".news-card");
             cards.forEach((card) => {
                 card.addEventListener("click", () => {
