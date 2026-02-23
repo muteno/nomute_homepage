@@ -896,50 +896,31 @@ const feedsConfig = [
 
             #scroll-top-btn {
                 position: fixed;
-                top: 85%;
-                left: 80%;
+                top: 90%;
+                left: 87%;
                 transform: translate(-50%, -50%);
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                background: rgba(255, 255, 255, 0.85);
-                color: #000;
+                width: 48px;
+                height: 48px;
+                clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+                background: rgba(255, 255, 255, 0.08);
+                backdrop-filter: blur(24px);
+                -webkit-backdrop-filter: blur(24px);
                 border: none;
-                font-family: "Noto Sans KR", sans-serif;
-                font-weight: 900;
-                font-size: 10px;
-                text-align: center;
-                cursor: pointer;
-                z-index: 99999;
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
                 display: none;
                 align-items: center;
                 justify-content: center;
+                cursor: pointer;
+                z-index: 999999;
+                padding-top: 16px;
+            }
+            #scroll-top-btn span {
+                color: #fff;
+                font-family: "Noto Sans KR", sans-serif;
+                font-weight: 900;
+                font-size: 9px;
             }
             #scroll-top-btn:active {
                 transform: translate(-50%, -50%) scale(0.92);
-            }
-
-            @media (max-width: 768px) {
-                #scroll-top-btn {
-                    top: 90%;
-                    left: 87%;
-                    z-index: 999999;
-                    position: relative;
-                }
-                #scroll-top-btn::before {
-                    content: "";
-                    position: absolute;
-                    top: -8px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    width: 0;
-                    height: 0;
-                    border-left: 6px solid transparent;
-                    border-right: 6px solid transparent;
-                    border-bottom: 10px solid #000;
-                }
             }
 
             /* Footer */
@@ -1216,7 +1197,9 @@ const feedsConfig = [
                         })
                     }
 
-                    <button id="scroll-top-btn">TOP</button>
+                    <button id="scroll-top-btn" style="display:none;">
+                        <span>TOP</span>
+                    </button>
                     <button id="floating-load-more" style="display: none;">
                         더<br />보기
                     </button>
