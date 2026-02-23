@@ -1251,57 +1251,54 @@ const feedsConfig = [
             }
 
             // Load More Button Logic (Intersection Observer)
+            const floatingBtn = document.getElementById("floating-load-more");
             let currentBatch = 1;
             const maxBatch = 3;
-            const floatingBtn = document.getElementById("floating-load-more");
 
             if (floatingBtn) {
-                // Observer to detect when the last card enters view
                 const observer = new IntersectionObserver(
                     (entries) => {
                         entries.forEach((entry) => {
-                            if (
-                                entry.isIntersecting &&
-                                currentBatch < maxBatch
-                            ) {
+                            if (currentBatch >= maxBatch) return; // 더 이상 로드할 게 없으면 무시
+                            if (entry.isIntersecting) {
                                 floatingBtn.style.display = "block";
+                            } else {
+                                floatingBtn.style.display = "none";
                             }
                         });
                     },
-                    { threshold: 0.5 },
+                    { threshold: 0.3 },
                 );
 
-                // Helper to observe the LAST visible card
                 function observeLastCard() {
-                    const visibleCards = document.querySelectorAll(
-                        '.news-card[style*="display: block"], .news-card:not([style*="display: none"])',
+                    observer.disconnect();
+                    const currentCards = document.querySelectorAll(
+                        `[data-batch="${currentBatch}"]`,
                     );
-                    if (visibleCards.length > 0) {
-                        observer.disconnect();
-                        observer.observe(visibleCards[visibleCards.length - 1]);
+                    if (currentCards.length > 0) {
+                        observer.observe(currentCards[currentCards.length - 1]);
                     }
                 }
 
-                // Initial observation
                 observeLastCard();
 
-                // Button Click Handler
                 floatingBtn.addEventListener("click", () => {
                     currentBatch++;
                     document
-                        .querySelectorAll(
-                            `.news-card[data-batch="${currentBatch}"]`,
-                        )
+                        .querySelectorAll(`[data-batch="${currentBatch}"]`)
                         .forEach((card) => {
                             (card as HTMLElement).style.display = "block";
                         });
-
                     floatingBtn.style.display = "none";
 
                     if (currentBatch >= maxBatch) {
+                        // 마지막 batch → 배너 표시, 버튼 완전 제거
+                        observer.disconnect();
                         const endCta = document.getElementById("end-cta");
                         if (endCta) endCta.style.display = "block";
+                        floatingBtn.remove();
                     } else {
+                        // 다음 batch의 마지막 카드 감시 시작
                         observeLastCard();
                     }
                 });
