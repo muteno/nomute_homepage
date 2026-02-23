@@ -1256,7 +1256,8 @@ const feedsConfig = [
 
                 observeLastCard();
 
-                floatingBtn.addEventListener("click", () => {
+                floatingBtn.onclick = (e) => {
+                    e.preventDefault();
                     currentBatch++;
                     document
                         .querySelectorAll(`[data-batch="${currentBatch}"]`)
@@ -1275,7 +1276,7 @@ const feedsConfig = [
                         // 다음 batch의 마지막 카드 감시 시작
                         observeLastCard();
                     }
-                });
+                };
             }
 
             // Mobile card tap interactions and link routing
