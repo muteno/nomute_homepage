@@ -16,11 +16,11 @@
             content="No Mute - 불편한 진실을 대면할 현명한 당신을 위합니다."
         />
 
-        <!-- Noto Sans KR Google Fonts -->
+        <!-- Google Fonts: DM Sans & Noto Sans KR -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
-            href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap"
+            href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@700&family=Noto+Sans+KR:wght@400;700;900&display=swap"
             rel="stylesheet"
         />
 
@@ -50,6 +50,7 @@
                 --font-stack:
                     "LEMONMILK", "Whitney", "Noto Sans KR", sans-serif;
                 --font-kr: "Noto Sans KR", sans-serif;
+                --font-dm: "DM Sans", "Noto Sans KR", sans-serif;
             }
 
             * {
@@ -259,7 +260,8 @@
                 color: #fff;
             }
             .instagram-cta p {
-                font-family: var(--font-kr);
+                font-family: var(--font-dm);
+                font-weight: 700;
                 font-size: 15px;
                 margin-bottom: 28px;
                 color: var(--text-muted);
@@ -273,8 +275,8 @@
                 text-decoration: none;
                 padding: 16px 32px;
                 border-radius: 30px;
-                font-weight: 800;
-                font-family: "LEMONMILK", sans-serif;
+                font-family: var(--font-dm);
+                font-weight: 700;
                 font-size: 16px;
                 transition: all 0.3s ease;
                 letter-spacing: -0.5px;
@@ -293,11 +295,13 @@
                 color: var(--text-muted);
                 font-size: 13px;
                 text-align: center;
-                font-family: "Whitney", var(--font-kr);
+                font-family: var(--font-dm);
+                font-weight: 700;
             }
             .footer-logo {
                 font-size: 18px;
-                font-family: "LEMONMILK", sans-serif;
+                font-family: var(--font-dm);
+                font-weight: 700;
                 margin-bottom: 12px;
             }
 
@@ -331,7 +335,7 @@
                     margin-bottom: 40px;
                 }
                 .pc-logo-container img {
-                    height: 40px;
+                    height: 60px;
                     width: auto;
                 }
 
@@ -386,8 +390,9 @@
         <!-- 2. PC View (>= 768px) -->
         <div class="pc-view">
             <h1 class="pc-main-copy">
-                THE <span class="highlight">VOICE</span> OF<br />
-                THE <span class="highlight">UNHEARD</span>.
+                <span class="highlight">Breaking</span><br />
+                The Silence.<br />
+                Speak the <span class="highlight">Truth</span>.
             </h1>
 
             <div class="pc-logo-container">
@@ -395,7 +400,9 @@
             </div>
 
             <p class="pc-sub-copy kor">
-                불편한 진실을 대면할 현명한 당신을 위합니다.
+                불편한 진실을 대면할 <span class="highlight"
+                    >현명한 당신을 위합니다.</span
+                >
             </p>
 
             <div class="pc-glass-box">
@@ -431,7 +438,8 @@
                     </h1>
                     <p class="sub-copy kor">
                         불편한 진실을 대면할 <span class="highlight"
-                            >현명한 당신을 위합니다.</span>
+                            >현명한 당신을 위합니다.</span
+                        >
                     </p>
                 </section>
 
@@ -500,13 +508,13 @@
                         href="https://instagram.com/no_mute"
                         class="btn-instagram"
                         target="_blank"
-                        rel="noopener noreferrer">@no_mute 연결</a
+                        rel="noopener noreferrer">@NO_MUTE 연결</a
                     >
                 </section>
 
                 <footer>
                     <div class="footer-logo">
-                        <span class="highlight">No_mute</span> Magazine
+                        <span class="highlight">NO_MUTE</span> MAGAZINE
                     </div>
                     <p>ⓒ 2025-26. No_mute. All rights reserved.</p>
                     <p style="margin-top: 8px; opacity: 0.5;">
