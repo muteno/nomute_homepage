@@ -854,6 +854,33 @@ const feedsConfig = [
                 opacity: 0.9;
             }
 
+            /* Floating Load More Button */
+            #floating-load-more {
+                position: fixed;
+                right: 20px;
+                bottom: 100px;
+                width: 64px;
+                height: 64px;
+                border-radius: 50%;
+                background-color: #0ffd02;
+                color: #000;
+                border: none;
+                font-family: "Noto Sans KR", sans-serif;
+                font-weight: 900;
+                font-size: 14px;
+                line-height: 1.3;
+                text-align: center;
+                cursor: pointer;
+                z-index: 999;
+                box-shadow: 0 4px 12px rgba(15, 253, 2, 0.3);
+                transition:
+                    opacity 0.3s ease,
+                    transform 0.2s ease;
+            }
+            #floating-load-more:active {
+                transform: scale(0.92);
+            }
+
             /* Footer */
             footer {
                 padding: 40px 24px 60px;
@@ -1158,12 +1185,9 @@ const feedsConfig = [
                         })
                     }
 
-                    <button
-                        id="load-more-btn"
-                        class="btn-instagram"
-                        style="margin-top: 10px; width: 100%; border: none; cursor: pointer; text-align: center;"
-                        >더 보기</button
-                    >
+                    <button id="floating-load-more" style="display: none;">
+                        더<br />보기
+                    </button>
 
                     <div id="end-cta" style="display: none; margin-top: 24px;">
                         <div class="instagram-cta">
@@ -1227,11 +1251,43 @@ const feedsConfig = [
                 );
             }
 
-            // Load More Button Logic
-            const loadMoreBtn = document.getElementById("load-more-btn");
-            if (loadMoreBtn) {
-                let currentBatch = 1;
-                loadMoreBtn.addEventListener("click", () => {
+            // Load More Button Logic (Intersection Observer)
+            let currentBatch = 1;
+            const maxBatch = 3;
+            const floatingBtn = document.getElementById("floating-load-more");
+
+            if (floatingBtn) {
+                // Observer to detect when the last card enters view
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        entries.forEach((entry) => {
+                            if (
+                                entry.isIntersecting &&
+                                currentBatch < maxBatch
+                            ) {
+                                floatingBtn.style.display = "block";
+                            }
+                        });
+                    },
+                    { threshold: 0.5 },
+                );
+
+                // Helper to observe the LAST visible card
+                function observeLastCard() {
+                    const visibleCards = document.querySelectorAll(
+                        '.news-card[style*="display: block"], .news-card:not([style*="display: none"])',
+                    );
+                    if (visibleCards.length > 0) {
+                        observer.disconnect();
+                        observer.observe(visibleCards[visibleCards.length - 1]);
+                    }
+                }
+
+                // Initial observation
+                observeLastCard();
+
+                // Button Click Handler
+                floatingBtn.addEventListener("click", () => {
                     currentBatch++;
                     document
                         .querySelectorAll(
@@ -1240,10 +1296,14 @@ const feedsConfig = [
                         .forEach((card) => {
                             (card as HTMLElement).style.display = "block";
                         });
-                    if (currentBatch >= 3) {
-                        loadMoreBtn.style.display = "none";
+
+                    floatingBtn.style.display = "none";
+
+                    if (currentBatch >= maxBatch) {
                         const endCta = document.getElementById("end-cta");
                         if (endCta) endCta.style.display = "block";
+                    } else {
+                        observeLastCard();
                     }
                 });
             }
