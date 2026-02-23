@@ -857,7 +857,9 @@ const feedsConfig = [
             #floating-load-more {
                 position: fixed;
                 right: 20px;
-                bottom: 200px;
+                bottom: auto;
+                top: 65vh;
+                top: 65dvh;
                 width: 72px;
                 height: 72px;
                 border-radius: 50%;
@@ -877,9 +879,7 @@ const feedsConfig = [
                 align-items: center;
                 justify-content: center;
                 padding: 0;
-                transition:
-                    opacity 0.3s ease,
-                    transform 0.2s ease;
+                transition: none;
                 box-shadow: none;
             }
             #floating-load-more:active {
@@ -1237,7 +1237,7 @@ const feedsConfig = [
                         entries.forEach((entry) => {
                             if (currentBatch >= maxBatch) return; // 더 이상 로드할 게 없으면 무시
                             if (entry.isIntersecting) {
-                                floatingBtn.style.display = "block";
+                                floatingBtn.style.display = "flex";
                             } else {
                                 floatingBtn.style.display = "none";
                             }
@@ -1258,8 +1258,11 @@ const feedsConfig = [
 
                 observeLastCard();
 
-                floatingBtn.onclick = (e) => {
-                    e.preventDefault();
+                let isLoading = false;
+                const loadTargetBatch = (e) => {
+                    if (isLoading) return;
+                    isLoading = true;
+
                     currentBatch++;
                     document
                         .querySelectorAll(`[data-batch="${currentBatch}"]`)
@@ -1278,7 +1281,21 @@ const feedsConfig = [
                         // 다음 batch의 마지막 카드 감시 시작
                         observeLastCard();
                     }
+
+                    setTimeout(() => {
+                        isLoading = false;
+                    }, 300);
                 };
+
+                floatingBtn.addEventListener("click", loadTargetBatch);
+                floatingBtn.addEventListener(
+                    "touchend",
+                    (e) => {
+                        e.preventDefault();
+                        floatingBtn.click();
+                    },
+                    { passive: false },
+                );
             }
 
             // Mobile card tap interactions and link routing
