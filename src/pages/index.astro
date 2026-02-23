@@ -156,6 +156,8 @@ const urls = [
     "https://www.khan.co.kr/rss/rssdata/total_news.xml",
     "https://www.hankyung.com/feed/all-news",
     "https://www.hani.co.kr/rss/",
+    "https://www.munhwa.com/rss/munhwa.xml",
+    "https://newstapa.org/feed",
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
@@ -191,6 +193,14 @@ const hankyung =
 const hani =
     results[7].status === "fulfilled" && results[7].value
         ? results[7].value
+        : null;
+const munhwa =
+    results[8].status === "fulfilled" && results[8].value
+        ? results[8].value
+        : null;
+const newstapa =
+    results[9].status === "fulfilled" && results[9].value
+        ? results[9].value
         : null;
 
 const feedsConfig = [
@@ -521,8 +531,8 @@ const feedsConfig = [
     },
     {
         batch: 4,
-        data: donga ? donga[6] : null,
-        source: "동아일보",
+        data: munhwa ? munhwa[0] : null,
+        source: "문화일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -548,8 +558,8 @@ const feedsConfig = [
     },
     {
         batch: 4,
-        data: hani ? hani[3] : null,
-        source: "한겨레",
+        data: newstapa ? newstapa[0] : null,
+        source: "뉴스타파",
         badge: "LEFT",
         bg: "#3B7BFF",
         text: "#fff",
@@ -557,8 +567,8 @@ const feedsConfig = [
     },
     {
         batch: 4,
-        data: donga ? donga[7] : null,
-        source: "동아일보",
+        data: munhwa ? munhwa[1] : null,
+        source: "문화일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -613,8 +623,8 @@ const feedsConfig = [
     },
     {
         batch: 5,
-        data: donga ? donga[8] : null,
-        source: "동아일보",
+        data: munhwa ? munhwa[2] : null,
+        source: "문화일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
@@ -640,8 +650,8 @@ const feedsConfig = [
     },
     {
         batch: 5,
-        data: hani ? hani[4] : null,
-        source: "한겨레",
+        data: newstapa ? newstapa[1] : null,
+        source: "뉴스타파",
         badge: "LEFT",
         bg: "#3B7BFF",
         text: "#fff",
@@ -649,8 +659,8 @@ const feedsConfig = [
     },
     {
         batch: 5,
-        data: donga ? donga[9] : null,
-        source: "동아일보",
+        data: munhwa ? munhwa[3] : null,
+        source: "문화일보",
         badge: "RIGHT",
         bg: "#FF3B3B",
         text: "#fff",
