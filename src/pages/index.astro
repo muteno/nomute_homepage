@@ -1135,7 +1135,7 @@ const feedsConfig = [
                 top: 20px;
                 right: 20px;
                 font-family: "Noto Sans KR", sans-serif;
-                font-size: 12px;
+                font-size: 11px;
                 color: #ffffff;
                 z-index: 10;
                 transition: opacity 0.3s ease;
@@ -1298,10 +1298,10 @@ const feedsConfig = [
                         >
                     </div>
                     <div id="scroll-progress"></div>
+                    <div id="hero-datetime"></div>
                 </header>
 
                 <section class="hero">
-                    <div id="hero-datetime"></div>
                     <h1>
                         <span class="highlight">Breaking</span><br />The
                         Silence.<br />Speak the <span class="highlight"
@@ -1520,6 +1520,8 @@ const feedsConfig = [
             const progressBar = document.getElementById("scroll-progress");
 
             function updateDateTime() {
+                const el = document.getElementById("hero-datetime");
+                if (!el) return;
                 const now = new Date();
                 const year = now.getFullYear();
                 const mm = String(now.getMonth() + 1).padStart(2, "0");
@@ -1532,8 +1534,7 @@ const feedsConfig = [
                 const days = ["일", "월", "화", "수", "목", "금", "토"];
                 const day = days[now.getDay()];
 
-                document.getElementById("hero-datetime").innerHTML =
-                    `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${min}${ampm}(KST)`;
+                el.innerHTML = `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${min}${ampm}(KST)`;
             }
             updateDateTime();
             setInterval(updateDateTime, 60000);
@@ -1561,12 +1562,15 @@ const feedsConfig = [
                         }
                     }
 
-                    // 히어로 로고 대칭 우측 상단 날짜 (헤더 고정되면 숨김)
+                    // 상단 고정바 활성화 시점에 숨김
                     const el = document.getElementById("hero-datetime");
-                    const header = document.getElementById("mobile-header");
-                    if (el && header) {
-                        const headerRect = header.getBoundingClientRect();
-                        el.style.opacity = headerRect.top <= 0 ? "0" : "1";
+                    if (el) {
+                        // 스크롤이 내려가면 숨김, 맨 위로 올라오면 다시 표시 (0 이상의 스크롤 위치 감지)
+                        if (window.scrollY > 10) {
+                            el.style.opacity = "0";
+                        } else {
+                            el.style.opacity = "1";
+                        }
                     }
                 },
                 { passive: true },
