@@ -167,6 +167,7 @@ const urls = [
     "https://www.kmib.co.kr/rss/data/kmibRssAll.xml",
     "https://www.mk.co.kr/rss/40300001/",
     "https://www.nocutnews.co.kr/rss/news",
+    "https://www.segye.com/Articles/RSSList/segye_opinion.xml",
 ];
 
 const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
@@ -246,6 +247,10 @@ const mk =
 const nocut =
     results[18].status === "fulfilled" && results[18].value
         ? results[18].value
+        : null;
+const segye =
+    results[19].status === "fulfilled" && results[19].value
+        ? results[19].value
         : null;
 
 const feedsConfig = [
@@ -520,6 +525,15 @@ const feedsConfig = [
     },
     {
         batch: 3,
+        data: segye ? segye[0] : null,
+        source: "세계일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
+    },
+    {
+        batch: 3,
         data: donga ? donga[5] : null,
         source: "동아일보",
         badge: "RIGHT",
@@ -701,6 +715,15 @@ const feedsConfig = [
         bg: "#3B7BFF",
         text: "#fff",
         grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
+    },
+    {
+        batch: 5,
+        data: segye ? segye[1] : null,
+        source: "세계일보",
+        badge: "RIGHT",
+        bg: "#FF3B3B",
+        text: "#fff",
+        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
     },
     {
         batch: 5,
