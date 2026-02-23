@@ -897,6 +897,12 @@ const feedsConfig = [
                 margin-bottom: 12px;
             }
 
+            /* Hide PC elements on mobile by default */
+            .pc-video-bg,
+            .pc-video-overlay {
+                display: none;
+            }
+
             /* ======== PC STYLES ======== */
             @media (min-width: 768px) {
                 .mobile-view {
