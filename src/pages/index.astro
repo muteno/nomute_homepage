@@ -896,7 +896,7 @@ const feedsConfig = [
 
             #scroll-top-btn {
                 position: fixed;
-                top: 45%;
+                top: 85%;
                 left: 80%;
                 transform: translate(-50%, -50%);
                 width: 36px;
@@ -913,7 +913,7 @@ const feedsConfig = [
                 z-index: 99999;
                 backdrop-filter: blur(12px);
                 -webkit-backdrop-filter: blur(12px);
-                display: flex;
+                display: none;
                 align-items: center;
                 justify-content: center;
             }
@@ -1329,12 +1329,25 @@ const feedsConfig = [
                 );
             }
 
-            document
-                .getElementById("scroll-top-btn")
-                ?.addEventListener("pointerdown", (e) => {
+            const topBtn = document.getElementById("scroll-top-btn");
+            if (topBtn) {
+                topBtn.addEventListener("pointerdown", (e) => {
                     e.stopPropagation();
                     window.scrollTo({ top: 0, behavior: "smooth" });
                 });
+
+                window.addEventListener(
+                    "scroll",
+                    () => {
+                        if (window.scrollY > window.innerHeight) {
+                            topBtn.style.display = "flex";
+                        } else {
+                            topBtn.style.display = "none";
+                        }
+                    },
+                    { passive: true },
+                );
+            }
 
             // Mobile card tap interactions and link routing
             document.querySelectorAll(".news-card").forEach((card) => {
