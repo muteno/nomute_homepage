@@ -894,6 +894,33 @@ const feedsConfig = [
                 transform: scale(0.92);
             }
 
+            #scroll-top-btn {
+                position: fixed;
+                top: 45%;
+                left: 80%;
+                transform: translate(-50%, -50%);
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.85);
+                color: #000;
+                border: none;
+                font-family: "Noto Sans KR", sans-serif;
+                font-weight: 900;
+                font-size: 10px;
+                text-align: center;
+                cursor: pointer;
+                z-index: 99999;
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #scroll-top-btn:active {
+                transform: translate(-50%, -50%) scale(0.92);
+            }
+
             /* Footer */
             footer {
                 padding: 40px 24px 60px;
@@ -1168,6 +1195,7 @@ const feedsConfig = [
                         })
                     }
 
+                    <button id="scroll-top-btn">TOP</button>
                     <button id="floating-load-more" style="display: none;">
                         더<br />보기
                     </button>
@@ -1300,6 +1328,13 @@ const feedsConfig = [
                     { passive: false },
                 );
             }
+
+            document
+                .getElementById("scroll-top-btn")
+                ?.addEventListener("pointerdown", (e) => {
+                    e.stopPropagation();
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                });
 
             // Mobile card tap interactions and link routing
             document.querySelectorAll(".news-card").forEach((card) => {
