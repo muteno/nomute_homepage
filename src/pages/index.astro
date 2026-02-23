@@ -645,6 +645,17 @@
                 return Math.max(0, Math.floor(diffMs / 60000));
             }
 
+            // RSS 추출 유틸
+            function getElementText(item, tagNames) {
+                for (let tag of tagNames) {
+                    const els = item.getElementsByTagName(tag);
+                    if (els.length > 0 && els[0].textContent) {
+                        return els[0].textContent.trim();
+                    }
+                }
+                return "";
+            }
+
             // RSS 피드 가져오기 (CORS 우회 Proxy 사용)
             async function fetchRSS(url) {
                 try {
@@ -654,18 +665,67 @@
                     const response = await fetch(proxyUrl);
                     if (!response.ok) throw new Error("Network response error");
                     const text = await response.text();
+
                     const parser = new DOMParser();
                     const xml = parser.parseFromString(text, "text/xml");
-                    const items = Array.from(xml.querySelectorAll("item"));
-                    return items.map((item) => ({
-                        title:
-                            item.querySelector("title")?.textContent ||
-                            "제목 없음",
-                        link: item.querySelector("link")?.textContent || "#",
-                        pubDate:
-                            item.querySelector("pubDate")?.textContent ||
-                            new Date().toISOString(),
-                    }));
+
+                    // 일부 RSS는 <item>이 아닌 태그명을 쓸 수도 있지만 표준은 item
+                    const items = Array.from(xml.getElementsByTagName("item"));
+
+                    return items.map((item) => {
+                        let imageUrl = null;
+
+                        // 1. enclosure 추출 (가장 확실)
+                        const enclosure =
+                            item.getElementsByTagName("enclosure")[0];
+                        if (enclosure && enclosure.getAttribute("url")) {
+                            imageUrl = enclosure.getAttribute("url");
+                        }
+
+                        // 2. media:content 추출
+                        if (!imageUrl) {
+                            const mediaContents =
+                                item.getElementsByTagName("media:content");
+                            if (
+                                mediaContents.length > 0 &&
+                                mediaContents[0].getAttribute("url")
+                            ) {
+                                imageUrl = mediaContents[0].getAttribute("url");
+                            } else {
+                                const contents = item.getElementsByTagNameNS(
+                                    "*",
+                                    "content",
+                                );
+                                if (
+                                    contents.length > 0 &&
+                                    contents[0].getAttribute("url")
+                                ) {
+                                    imageUrl = contents[0].getAttribute("url");
+                                }
+                            }
+                        }
+
+                        // 3. description img src 파싱
+                        if (!imageUrl) {
+                            const desc = getElementText(item, ["description"]);
+                            const imgMatch = desc.match(
+                                /<img[^>]+src=["']([^"']+)["']/i,
+                            );
+                            if (imgMatch && imgMatch[1]) {
+                                imageUrl = imgMatch[1];
+                            }
+                        }
+
+                        return {
+                            title:
+                                getElementText(item, ["title"]) || "제목 없음",
+                            link: getElementText(item, ["link"]) || "#",
+                            pubDate:
+                                getElementText(item, ["pubDate", "dc:date"]) ||
+                                new Date().toISOString(),
+                            imageUrl: imageUrl,
+                        };
+                    });
                 } catch (error) {
                     console.error("Error fetching RSS:", error);
                     return [];
@@ -694,14 +754,15 @@
                         fetchRSS(joinsUrl),
                         fetchRSS(khanUrl),
                     ]);
-                    yonhap = result[0] as any[];
-                    joins = result[1] as any[];
-                    khan = result[2] as any[];
+                    yonhap = result[0];
+                    joins = result[1];
+                    khan = result[2];
                 } catch (e) {
                     console.error("Failed to load RSS data", e);
                 }
 
                 // 카드 매핑 (0,1,2: 연합 / 3: 중앙 / 4: 경향)
+                // 연합뉴스 0번 누락/이슈 대비 첫번째 아이템부터 정상적으로 바인딩
                 const feeds = [
                     yonhap[0],
                     yonhap[1],
@@ -721,33 +782,84 @@
                     ) as HTMLElement;
                     const htmlCard = card as HTMLElement;
 
+                    const badge = card.querySelector(
+                        ".news-badge",
+                    ) as HTMLElement;
+                    const imgContainer = card.querySelector(
+                        ".news-image",
+                    ) as HTMLElement;
+                    const imgBg = card.querySelector(
+                        ".news-image > div:nth-child(2)",
+                    ) as HTMLElement;
+                    const contentContainer = card.querySelector(
+                        ".news-content",
+                    ) as HTMLElement;
+
                     const data = feeds[i];
+
+                    function hideImageShowBadge() {
+                        if (badge && imgContainer && contentContainer) {
+                            badge.style.position = "static";
+                            badge.style.display = "inline-block";
+                            badge.style.marginBottom = "12px";
+                            contentContainer.insertBefore(
+                                badge,
+                                contentContainer.firstChild,
+                            );
+                            imgContainer.style.display = "none";
+                        }
+                    }
 
                     if (data && data.title !== "제목 없음") {
                         titleEl.innerText = data.title;
                         const minutes = getMinutesSince(data.pubDate);
                         timeEl.innerText = formatTimeAgo(minutes);
 
-                        // 기사 클릭 시 새 탭으로 이동
-                        htmlCard.addEventListener("click", () => {
+                        // 이미지 렌더링
+                        if (data.imageUrl && imgBg) {
+                            // 이미지가 있을 경우 배경 교체
+                            imgBg.style.background = `url("${data.imageUrl}") center/cover no-repeat`;
+
+                            // 이미지 로드 실패 시 대체 처리 (img 태그를 쓰는 게 아니므로 js Image 객체로 확인)
+                            const imgTest = new Image();
+                            imgTest.onerror = hideImageShowBadge;
+                            imgTest.src = data.imageUrl;
+                        } else {
+                            // 이미지가 아예 파싱되지 않은 경우
+                            hideImageShowBadge();
+                        }
+
+                        // 기사 클릭 시 새 탭으로 이동 (onclick으로 대체하여 리스너 중복 방지)
+                        htmlCard.onclick = () => {
                             window.open(data.link, "_blank");
-                        });
+                        };
                     } else {
                         // fetch 실패 시 또는 데이터 없을 시
                         titleEl.innerText = "뉴스를 불러오는 중입니다";
                         timeEl.innerText = "-";
+                        hideImageShowBadge();
                     }
                 });
             }
 
-            // Mobile card tap interactions
+            // Mobile card tap interactions (hover 효과 대체)
             document.querySelectorAll(".news-card").forEach((card) => {
                 const htmlCard = card as HTMLElement;
-                htmlCard.addEventListener("click", () => {
+                htmlCard.addEventListener("mousedown", () => {
                     htmlCard.style.transform = "scale(0.98)";
-                    setTimeout(() => {
-                        htmlCard.style.transform = "scale(1)";
-                    }, 150);
+                });
+                htmlCard.addEventListener("mouseup", () => {
+                    htmlCard.style.transform = "scale(1)";
+                });
+                htmlCard.addEventListener("mouseleave", () => {
+                    htmlCard.style.transform = "scale(1)";
+                });
+                // for touch devices
+                htmlCard.addEventListener("touchstart", () => {
+                    htmlCard.style.transform = "scale(0.98)";
+                });
+                htmlCard.addEventListener("touchend", () => {
+                    htmlCard.style.transform = "scale(1)";
                 });
             });
 
