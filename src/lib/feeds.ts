@@ -8,7 +8,7 @@ export type Bias = "agency" | "left" | "right" | "culture";
 
 export interface FeedSource {
     publisher: string;
-    badge: string; // 카드 배지 라벨(카테고리 또는 LEFT/RIGHT)
+    badge: string; // 카드 배지 라벨(카테고리·피드 성격 — LEFT/RIGHT 표기 폐지 260703)
     bias: Bias;
     url: string;
 }
@@ -34,13 +34,14 @@ export const FEED_SOURCES: FeedSource[] = [
     { publisher: "뉴시스", badge: "경제", bias: "agency", url: "https://www.newsis.com/RSS/economy.xml" },
     { publisher: "뉴시스", badge: "사회", bias: "agency", url: "https://www.newsis.com/RSS/society.xml" },
     { publisher: "뉴시스", badge: "국제", bias: "agency", url: "https://www.newsis.com/RSS/international.xml" },
-    // 성향 매체 — LEFT/RIGHT 배지(편향 병치가 편성 의도)
-    { publisher: "동아일보", badge: "RIGHT", bias: "right", url: "https://rss.donga.com/total.xml" },
-    { publisher: "한국경제", badge: "RIGHT", bias: "right", url: "https://www.hankyung.com/feed/all-news" },
-    { publisher: "매일경제", badge: "RIGHT", bias: "right", url: "https://www.mk.co.kr/rss/40300001/" },
-    { publisher: "세계일보", badge: "RIGHT", bias: "right", url: "https://www.segye.com/Articles/RSSList/segye_opinion.xml" },
-    { publisher: "경향신문", badge: "LEFT", bias: "left", url: "https://www.khan.co.kr/rss/rssdata/total_news.xml" },
-    { publisher: "한겨레", badge: "LEFT", bias: "left", url: "https://www.hani.co.kr/rss/" },
+    // 종합지·경제지 — 배지는 피드 성격 라벨(LEFT/RIGHT 표기 폐지·운영자 260703 "의미 없음").
+    // bias 필드는 화면 미표기·편성 다양성(슬롯 라운드로빈) 내부용으로만 유지.
+    { publisher: "동아일보", badge: "종합", bias: "right", url: "https://rss.donga.com/total.xml" },
+    { publisher: "한국경제", badge: "경제", bias: "right", url: "https://www.hankyung.com/feed/all-news" },
+    { publisher: "매일경제", badge: "경제", bias: "right", url: "https://www.mk.co.kr/rss/40300001/" },
+    { publisher: "세계일보", badge: "오피니언", bias: "right", url: "https://www.segye.com/Articles/RSSList/segye_opinion.xml" },
+    { publisher: "경향신문", badge: "종합", bias: "left", url: "https://www.khan.co.kr/rss/rssdata/total_news.xml" },
+    { publisher: "한겨레", badge: "종합", bias: "left", url: "https://www.hani.co.kr/rss/" },
     // 문화
     { publisher: "스포츠경향", badge: "문화", bias: "culture", url: "https://sports.khan.co.kr/rss/k-culture" },
 ];

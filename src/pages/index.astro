@@ -74,12 +74,8 @@ function timeAgo(iso: string | null): string {
                 --fg: #eef7f0;
                 --fg-2: #cfd8d0;
                 --mut: #8fa697;
-                /* 편향 스펙트럼(에디터 bias 토큰) — LEFT=파랑 · RIGHT=빨강.
-                   RIGHT 배지는 흰 글자 AA(4.5:1) 확보 위해 홈에서 한 톤 어둡게(#e23b2a는 4.28:1 미달·평의회5 C3).
-                   에디터 정본값(--bias-r2 #e23b2a)은 그대로, 배지 표시용 파생만 홈 로컬. */
-                --bias-l2: #3a6ddb;
-                --bias-r2: #e23b2a;
-                --badge-right: #cf2b1c; /* on #fff ≈ 5.0:1 */
+                /* (LEFT/RIGHT 편향 배지 폐지 — 운영자 260703 "의미 없음" → bias 토큰 제거,
+                   배지는 카테고리 라벨만: 통신사/종합/경제/오피니언=라임 · 문화=앰버) */
                 /* 뉴스 이미지 플레이스홀더/스켈레톤 그라데(딥그린 계열 · raw 중복 제거·평의회4) */
                 --news-ph-1: #1f251f;
                 --news-ph-2: #0a0e0a;
@@ -464,19 +460,11 @@ function timeAgo(iso: string | null): string {
                 display: inline-block;
                 margin-bottom: var(--sp-2);
             }
-            /* 배지 색 = 성향 매핑: 통신사(agency)=라임 accent(기본) · 문화=앰버 · 좌=파랑 · 우=빨강.
-               agency/culture 스타일 부재 시 accent로 뭉개지던 것 교정(평의회2). */
+            /* 배지 색 = 카테고리 라벨만: 통신사·종합·경제·오피니언=라임 accent(기본) · 문화=앰버.
+               LEFT/RIGHT 편향 표기는 폐지(운영자 260703). */
             .news-badge.bias-culture {
                 background-color: var(--accent-2);
                 color: #1a1205;
-            }
-            .news-badge.bias-left {
-                background-color: var(--bias-l2);
-                color: #fff;
-            }
-            .news-badge.bias-right {
-                background-color: var(--badge-right);
-                color: #fff;
             }
             .news-content {
                 padding: 28px 20px 20px 20px;
