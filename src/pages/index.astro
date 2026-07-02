@@ -1,780 +1,20 @@
 ---
-// src/pages/index.astro
+// src/pages/index.astro — 노뮤트 홈
+// 디자인 = nomute-editor viewer :root 토큰 이식(값 복사·정본은 에디터), RSS 편성 = src/lib/feeds.ts(소스별 큐→중복제거→성향 슬롯).
+import { buildCards } from "../lib/feeds";
 
-// Helper to clean extracted text
-function cleanStr(str) {
-    if (!str) return "";
-    let s = str.replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/gi, "$1").trim();
-    return s
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&amp;/g, "&")
-        .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-}
+const cards = await buildCards();
+const maxBatch = cards.length ? Math.max(...cards.map((c) => c.batch)) : 1;
 
-// 빌드 시점 fetch Timeout
-async function fetchWithTimeout(url, timeoutMs) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-        const response = await fetch(url, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        return response;
-    } catch (error) {
-        clearTimeout(timeoutId);
-        throw error;
-    }
-}
-
-// 원본 링크에서 og:image 파싱 (서버사이드)
-async function fetchOgImage(linkUrl) {
-    if (!linkUrl || linkUrl === "#") return null;
-    try {
-        const res = await fetchWithTimeout(linkUrl, 3000); // 3s timeout
-        if (!res.ok) return null;
-        const text = await res.text();
-        const ogMatch =
-            text.match(
-                /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["'][^>]*>/i,
-            ) ||
-            text.match(
-                /<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["'][^>]*>/i,
-            );
-        if (ogMatch && ogMatch[1]) {
-            return ogMatch[1].replace(/&amp;/g, "&");
-        }
-    } catch (e) {}
-    return null;
-}
-
-// 서버사이드 RSS 피드 가져오기
-async function fetchRSS(url) {
-    try {
-        const res = await fetchWithTimeout(url, 5000); // 5s timeout
-        if (!res.ok) throw new Error("Fetch failed");
-        const xml = await res.text();
-
-        const items = [];
-        const itemRegex = /<item[^>]*>([\s\S]*?)<\/item>/gi;
-        let match;
-        while ((match = itemRegex.exec(xml)) !== null) {
-            const itemContent = match[1];
-
-            const titleMatch = itemContent.match(
-                /<title[^>]*>([\s\S]*?)<\/title>/i,
-            );
-            const linkMatch = itemContent.match(
-                /<link[^>]*>([\s\S]*?)<\/link>/i,
-            );
-            const pubDateMatch =
-                itemContent.match(/<pubDate[^>]*>([\s\S]*?)<\/pubDate>/i) ||
-                itemContent.match(/<dc:date[^>]*>([\s\S]*?)<\/dc:date>/i);
-
-            let imageUrl = null;
-
-            // 1. enclosure
-            if (!imageUrl) {
-                const encMatch = itemContent.match(
-                    /<enclosure[^>]*url=["']([^"']+)["']/i,
-                );
-                if (encMatch) imageUrl = encMatch[1];
-            }
-            // 2. media:content
-            if (!imageUrl) {
-                const mcMatch = itemContent.match(
-                    /<media:content[^>]*url=["']([^"']+)["']/i,
-                );
-                if (mcMatch) imageUrl = mcMatch[1];
-            }
-            // 3. media:thumbnail
-            if (!imageUrl) {
-                const mtMatch = itemContent.match(
-                    /<media:thumbnail[^>]*url=["']([^"']+)["']/i,
-                );
-                if (mtMatch) imageUrl = mtMatch[1];
-            }
-            // 4. description / content:encoded img 파싱
-            if (!imageUrl) {
-                const descMatch = itemContent.match(
-                    /<(?:description|content:encoded)[^>]*>([\s\S]*?)<\/(?:description|content:encoded)>/i,
-                );
-                if (descMatch) {
-                    const imgMatch = descMatch[1].match(
-                        /<img[^>]+src=["']([^"']+)["']/i,
-                    );
-                    if (imgMatch) imageUrl = imgMatch[1];
-                }
-            }
-
-            const link = linkMatch ? cleanStr(linkMatch[1]) : "#";
-
-            items.push({
-                title: titleMatch ? cleanStr(titleMatch[1]) : "제목 없음",
-                link: link,
-                pubDate: pubDateMatch
-                    ? cleanStr(pubDateMatch[1])
-                    : new Date().toISOString(),
-                imageUrl: imageUrl || null,
-            });
-        }
-
-        // 5. og:image fallback execution
-        for (let item of items) {
-            if (!item.imageUrl && item.link !== "#") {
-                item.imageUrl = await fetchOgImage(item.link);
-            }
-        }
-
-        return items.length > 0 ? items : null;
-    } catch (error) {
-        console.error("RSS Fetch Error for", url, error.message);
-        return null;
-    }
-}
-
-// 시간 계산 (정적 HTML 빌드 시점에 고정)
-function formatTimeAgo(dateString) {
-    const pubDate = new Date(dateString);
-    const now = new Date();
-    if (isNaN(pubDate.getTime())) return "-";
-    const diffMs = now.getTime() - pubDate.getTime();
+// 빌드 시점 초기값 — 클라이언트가 즉시 실시간 갱신(KST 기준 상대시간)
+function timeAgo(iso: string | null): string {
+    if (!iso) return "-";
+    const diffMs = Date.now() - new Date(iso).getTime();
     const minutes = Math.max(0, Math.floor(diffMs / 60000));
-
     if (minutes < 60) return "방금 전";
     if (minutes < 1440) return Math.floor(minutes / 60) + "시간 전";
     return Math.floor(minutes / 1440) + "일 전";
 }
-
-// 빌드 시점에 모든 피드 병렬 로드
-const urls = [
-    "https://www.yna.co.kr/rss/politics.xml",          // 0 연합 정치
-    "https://www.yna.co.kr/rss/economy.xml",            // 1 연합 경제
-    "https://www.yna.co.kr/rss/society.xml",             // 2 연합 사회
-    "https://www.yna.co.kr/rss/international.xml",       // 3 연합 국제
-    "https://rss.donga.com/total.xml",                   // 4 동아일보
-    "https://www.khan.co.kr/rss/rssdata/total_news.xml", // 5 경향신문
-    "https://www.hankyung.com/feed/all-news",            // 6 한국경제
-    "https://www.hani.co.kr/rss/",                       // 7 한겨레
-    "https://www.newsis.com/RSS/politics.xml",           // 8 뉴시스 정치
-    "https://www.newsis.com/RSS/economy.xml",            // 9 뉴시스 경제
-    "https://www.newsis.com/RSS/society.xml",            // 10 뉴시스 사회
-    "https://www.newsis.com/RSS/international.xml",      // 11 뉴시스 국제
-    "https://www.mk.co.kr/rss/40300001/",                // 12 매일경제
-    "https://www.segye.com/Articles/RSSList/segye_opinion.xml", // 13 세계일보 오피니언
-    "https://sports.khan.co.kr/rss/k-culture",           // 14 스포츠경향 K-Culture
-];
-
-const results = await Promise.allSettled(urls.map((u) => fetchRSS(u)));
-
-const yonhapPol =
-    results[0].status === "fulfilled" && results[0].value
-        ? results[0].value
-        : null;
-const yonhapEco =
-    results[1].status === "fulfilled" && results[1].value
-        ? results[1].value
-        : null;
-const yonhapSoc =
-    results[2].status === "fulfilled" && results[2].value
-        ? results[2].value
-        : null;
-const yonhapInt =
-    results[3].status === "fulfilled" && results[3].value
-        ? results[3].value
-        : null;
-const donga =
-    results[4].status === "fulfilled" && results[4].value
-        ? results[4].value
-        : null;
-const khan =
-    results[5].status === "fulfilled" && results[5].value
-        ? results[5].value
-        : null;
-const hankyung =
-    results[6].status === "fulfilled" && results[6].value
-        ? results[6].value
-        : null;
-const hani =
-    results[7].status === "fulfilled" && results[7].value
-        ? results[7].value
-        : null;
-const newsisPol =
-    results[8].status === "fulfilled" && results[8].value
-        ? results[8].value
-        : null;
-const newsisEco =
-    results[9].status === "fulfilled" && results[9].value
-        ? results[9].value
-        : null;
-const newsisSoc =
-    results[10].status === "fulfilled" && results[10].value
-        ? results[10].value
-        : null;
-const newsisInt =
-    results[11].status === "fulfilled" && results[11].value
-        ? results[11].value
-        : null;
-const mk =
-    results[12].status === "fulfilled" && results[12].value
-        ? results[12].value
-        : null;
-const segye =
-    results[13].status === "fulfilled" && results[13].value
-        ? results[13].value
-        : null;
-const skK =
-    results[14].status === "fulfilled" && results[14].value
-        ? results[14].value
-        : null;
-
-const feedsConfig = [
-    // --- BATCH 1 (Cards 1-11) ---
-    {
-        batch: 1,
-        data: yonhapPol ? yonhapPol[0] : null,
-        source: "연합뉴스",
-        badge: "정치",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: yonhapEco ? yonhapEco[0] : null,
-        source: "연합뉴스",
-        badge: "경제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: yonhapSoc ? yonhapSoc[0] : null,
-        source: "연합뉴스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: yonhapInt ? yonhapInt[0] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: yonhapInt ? yonhapInt[1] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-
-    {
-        batch: 1,
-        data: donga ? donga[0] : null,
-        source: "동아일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: khan ? khan[0] : null,
-        source: "경향신문",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: hankyung ? hankyung[0] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: hani ? hani[0] : null,
-        source: "한겨레",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 1,
-        data: donga ? donga[1] : null,
-        source: "동아일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-
-    // --- BATCH 2 (Cards 12-22) ---
-    {
-        batch: 2,
-        data: yonhapPol ? yonhapPol[1] : null,
-        source: "연합뉴스",
-        badge: "정치",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: yonhapEco ? yonhapEco[1] : null,
-        source: "연합뉴스",
-        badge: "경제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: yonhapSoc ? yonhapSoc[1] : null,
-        source: "연합뉴스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: yonhapInt ? yonhapInt[2] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: yonhapInt ? yonhapInt[3] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-
-    {
-        batch: 2,
-        data: donga ? donga[2] : null,
-        source: "동아일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: khan ? khan[1] : null,
-        source: "경향신문",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: hankyung ? hankyung[1] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: hani ? hani[1] : null,
-        source: "한겨레",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 2,
-        data: donga ? donga[3] : null,
-        source: "동아일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-
-    // --- BATCH 3 (Cards 23-33) ---
-    {
-        batch: 3,
-        data: yonhapPol ? yonhapPol[2] : null,
-        source: "연합뉴스",
-        badge: "정치",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: yonhapEco ? yonhapEco[2] : null,
-        source: "연합뉴스",
-        badge: "경제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: yonhapSoc ? yonhapSoc[2] : null,
-        source: "연합뉴스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: yonhapInt ? yonhapInt[4] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: yonhapInt ? yonhapInt[5] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-
-    {
-        batch: 3,
-        data: donga ? donga[4] : null,
-        source: "동아일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: khan ? khan[2] : null,
-        source: "경향신문",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: hankyung ? hankyung[2] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: hani ? hani[2] : null,
-        source: "한겨레",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 3,
-        data: segye ? segye[0] : null,
-        source: "세계일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: newsisInt ? newsisInt[1] : null,
-        source: "뉴시스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: donga ? donga[5] : null,
-        source: "동아일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-
-    // --- BATCH 4 (Cards 34-43) ---
-    {
-        batch: 4,
-        data: yonhapPol ? yonhapPol[3] : null,
-        source: "연합뉴스",
-        badge: "정치",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: yonhapEco ? yonhapEco[3] : null,
-        source: "연합뉴스",
-        badge: "경제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: yonhapSoc ? yonhapSoc[3] : null,
-        source: "연합뉴스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: yonhapInt ? yonhapInt[6] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: yonhapInt ? yonhapInt[7] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: newsisSoc ? newsisSoc[1] : null,
-        source: "뉴시스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: khan ? khan[3] : null,
-        source: "경향신문",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 4,
-        data: hankyung ? hankyung[3] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: skK ? skK[0] : null,
-        source: "스포츠경향",
-        badge: "문화",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: newsisInt ? newsisInt[2] : null,
-        source: "뉴시스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-
-    // --- BATCH 5 (Cards 44-53) ---
-    {
-        batch: 5,
-        data: yonhapPol ? yonhapPol[4] : null,
-        source: "연합뉴스",
-        badge: "정치",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: yonhapEco ? yonhapEco[4] : null,
-        source: "연합뉴스",
-        badge: "경제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: yonhapSoc ? yonhapSoc[4] : null,
-        source: "연합뉴스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: yonhapInt ? yonhapInt[8] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: yonhapInt ? yonhapInt[9] : null,
-        source: "연합뉴스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: hankyung ? hankyung[5] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: khan ? khan[4] : null,
-        source: "경향신문",
-        badge: "LEFT",
-        bg: "#3B7BFF",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #0f182a, #0a0e0a)",
-    },
-    {
-        batch: 5,
-        data: hankyung ? hankyung[4] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: skK ? skK[1] : null,
-        source: "스포츠경향",
-        badge: "문화",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: segye ? segye[1] : null,
-        source: "세계일보",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: hankyung ? hankyung[6] : null,
-        source: "한국경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-
-    // --- BATCH 6 (Cards 54-61) ---
-    {
-        batch: 6,
-        data: newsisPol ? newsisPol[0] : null,
-        source: "뉴시스",
-        badge: "정치",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: newsisEco ? newsisEco[0] : null,
-        source: "뉴시스",
-        badge: "경제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: newsisSoc ? newsisSoc[0] : null,
-        source: "뉴시스",
-        badge: "사회",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: newsisInt ? newsisInt[0] : null,
-        source: "뉴시스",
-        badge: "국제",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: skK ? skK[2] : null,
-        source: "스포츠경향",
-        badge: "문화",
-        bg: "#0ffd02",
-        text: "#000",
-        grad: "linear-gradient(135deg, #1f251f, #0a0e0a)",
-    },
-    {
-        batch: 6,
-        data: mk ? mk[0] : null,
-        source: "매일경제",
-        badge: "RIGHT",
-        bg: "#FF3B3B",
-        text: "#fff",
-        grad: "linear-gradient(135deg, #2a0f0f, #0a0e0a)",
-    },
-];
 ---
 
 <!doctype html>
@@ -783,49 +23,118 @@ const feedsConfig = [
         <meta charset="UTF-8" />
         <meta
             name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+            content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
+        <meta name="theme-color" content="#020402" />
         <title>No Mute - THE VOICE OF THE UNHEARD.</title>
         <meta
             name="description"
             content="No Mute - 불편한 진실을 대면할 현명한 당신을 위합니다."
         />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/png" href="/assets/icon-192.png" />
+        <link rel="apple-touch-icon" href="/assets/icon-192.png" />
 
-        <!-- Google Fonts: DM Sans & Noto Sans KR -->
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <!-- Pretendard(에디터 뷰어와 동일 스택) + 브랜드 영문 헤드라인은 로컬 LEMONMILK -->
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+        <!-- 히어로 헤드라인 폰트 프리로드 = FOUT/CLS 저감(평의회5 W4) -->
         <link
-            href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@700&family=Noto+Sans+KR:wght@400;700;900&display=swap"
+            rel="preload"
+            as="font"
+            type="font/otf"
+            href="/fonts/LEMONMILK-Bold.otf"
+            crossorigin
+        />
+        <link
             rel="stylesheet"
+            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
 
         <style>
-            /* Custom Local Fonts */
             @font-face {
                 font-family: "LEMONMILK";
                 src: url("/fonts/LEMONMILK-Bold.otf") format("opentype");
                 font-weight: bold;
                 font-style: normal;
-            }
-
-            @font-face {
-                font-family: "Whitney";
-                src: url("/fonts/whitney-bold.otf") format("opentype");
-                font-weight: bold;
-                font-style: normal;
+                font-display: swap;
             }
 
             :root {
-                --bg-base: #020402;
-                --accent-green: #0ffd02;
-                --text-main: #ffffff;
-                --text-muted: #aaaaaa;
-                --card-bg: rgba(20, 20, 20, 0.4);
-                --border-color: rgba(255, 255, 255, 0.08);
-                --font-stack:
-                    "LEMONMILK", "Whitney", "Noto Sans KR", sans-serif;
-                --font-kr: "Noto Sans KR", sans-serif;
-                --font-dm: "DM Sans", "Noto Sans KR", sans-serif;
+                /* ── 디자인 토큰 = nomute-editor viewer :root 이식(값 복사 스냅샷 · 정본은 에디터 :root) ── */
+                --bg: #020402; /* 홈 브랜드 딥블랙(기존 유지) */
+                --glass: rgba(38, 64, 46, 0.42);
+                --glass2: rgba(14, 26, 18, 0.55);
+                --line: rgba(255, 255, 255, 0.08);
+                --line2: rgba(255, 255, 255, 0.06);
+                --accent: #0ffd02;
+                --accent-rgb: 15, 253, 2;
+                --accent-dim: rgba(15, 253, 2, 0.13);
+                --accent-2: #ff9614; /* 앰버(에디터 --accent-2 계승) — 문화 배지 */
+                --on-accent: #062108;
+                --fg: #eef7f0;
+                --fg-2: #cfd8d0;
+                --mut: #8fa697;
+                /* 편향 스펙트럼(에디터 bias 토큰) — LEFT=파랑 · RIGHT=빨강.
+                   RIGHT 배지는 흰 글자 AA(4.5:1) 확보 위해 홈에서 한 톤 어둡게(#e23b2a는 4.28:1 미달·평의회5 C3).
+                   에디터 정본값(--bias-r2 #e23b2a)은 그대로, 배지 표시용 파생만 홈 로컬. */
+                --bias-l2: #3a6ddb;
+                --bias-r2: #e23b2a;
+                --badge-right: #cf2b1c; /* on #fff ≈ 5.0:1 */
+                /* 뉴스 이미지 플레이스홀더/스켈레톤 그라데(딥그린 계열 · raw 중복 제거·평의회4) */
+                --news-ph-1: #1f251f;
+                --news-ph-2: #0a0e0a;
+                --bg-rgb: 2, 4, 2;
+                /* 반지름 스케일 */
+                --r: 24px;
+                --r-l: 16px;
+                --r-m: 11px;
+                --r-s: 9px;
+                --r-pill: 999px;
+                /* 간격 스케일 */
+                --sp-1: 6px;
+                --sp-2: 12px;
+                --sp-3: 18px;
+                --sp-4: 24px;
+                /* 글래스 blur */
+                --blur-s: 8px;
+                --blur-m: 14px;
+                --blur-l: 22px;
+                --blur-xl: 30px;
+                /* 타이포 스케일 */
+                --fs-h1: 19px;
+                --fs-h2: 15px;
+                --fs-label: 13px;
+                --fs-body: 15px;
+                --fs-sm: 12px;
+                --fs-xs: 11px;
+                --fw-b: 700;
+                --fw-x: 800;
+                --lh-base: 1.6;
+                /* 홈 전용 디스플레이 타이포(마케팅 히어로 — 앱 스케일 밖이라 별도 토큰) */
+                --fs-hero: 46px;
+                --fs-hero-pc: 72px;
+                /* 모션 */
+                --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+                --ease-in: cubic-bezier(0.22, 0.61, 0.36, 1);
+                --dur: 0.18s;
+                --dur-fast: 0.12s;
+                /* 눌림(:active) scale 사다리 — 클수록 덜 줄임(에디터 --press-* 계승) */
+                --press-m: 0.9; /* 더보기 FAB(에디터 .bnav-fab 계승·72px) */
+                --press-l: 0.95; /* 큰 버튼·TOP(.totop 형제) */
+                --press-card: 0.99; /* 카드 = 에디터 .card:active 정본(cardIn 시작 .985와 별개·평의회4) */
+                /* 폰트 스택 */
+                --font-en: "LEMONMILK", "Pretendard Variable", sans-serif;
+                --font-kr: "Pretendard Variable", Pretendard, -apple-system,
+                    BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR",
+                    sans-serif;
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                :root {
+                    --press-m: 1;
+                    --press-l: 1;
+                    --press-card: 1;
+                }
             }
 
             * {
@@ -841,43 +150,33 @@ const feedsConfig = [
             }
 
             body {
-                font-family: var(--font-stack);
-                background-color: var(--bg-base);
-                color: var(--text-main);
-                line-height: 1.5;
+                font-family: var(--font-kr);
+                background-color: var(--bg);
+                color: var(--fg);
+                font-size: var(--fs-body);
+                line-height: var(--lh-base);
+                letter-spacing: -0.2px;
                 -webkit-font-smoothing: antialiased;
             }
 
-            /* 1. Mobile Background Image (Default) */
+            /* 배경 — WebP 우선(2.6MB PNG→26KB·평의회6) + PNG 폴백. 레이어 자체가
+               position:fixed라 background-attachment:fixed 불요(모바일 합성 비용만 유발). */
             .bg-dark-wave {
                 position: fixed;
-                top: 0;
-                left: 0;
-                right: 0;
-                bottom: 0;
+                inset: 0;
                 z-index: -1;
-                background-color: var(--bg-base);
+                background-color: var(--bg);
                 background-image: url("/assets/background.png");
+                background-image: image-set(
+                    url("/assets/background.webp") type("image/webp"),
+                    url("/assets/background.png") type("image/png")
+                );
                 background-size: cover;
-                background-attachment: fixed;
                 background-position: center;
             }
 
-            /* Video elements (Hidden on mobile by default) */
-            .pc-video-bg {
-                display: none;
-            }
-            .pc-video-overlay {
-                display: none;
-            }
-
             .highlight {
-                color: var(--accent-green);
-            }
-
-            /* Force Korean font where appropriate without breaking English fonts */
-            .kor {
-                font-family: var(--font-kr);
+                color: var(--accent);
             }
 
             /* VIEW TOGGLE */
@@ -891,7 +190,7 @@ const feedsConfig = [
                 min-height: 100vh;
             }
 
-            /* ======== MOBILE STYLES ======== */
+            /* ======== MOBILE ======== */
             .mobile-container {
                 width: 100%;
                 max-width: 480px;
@@ -903,28 +202,25 @@ const feedsConfig = [
                 padding-bottom: 60px;
             }
 
-            /* Header / Logo */
+            /* Header */
             #mobile-header {
-                padding: 16px 24px;
-                padding-top: 16px;
+                padding: 16px var(--sp-4);
                 display: flex;
                 justify-content: flex-start;
                 align-items: center;
-                gap: 12px;
+                gap: var(--sp-2);
                 position: sticky;
                 top: 0;
                 z-index: 1000;
             }
 
-            /* Full viewport width background for blocking behind sticky nav */
             #mobile-header::before {
                 content: "";
                 position: absolute;
                 top: 0;
                 left: 0;
-                transform: none;
                 width: 100%;
-                height: 96%; /* Shortened fade */
+                height: 96%;
                 background: linear-gradient(
                     180deg,
                     rgba(2, 4, 2, 0.98) 40%,
@@ -946,15 +242,15 @@ const feedsConfig = [
                     rgba(0, 0, 0, 0.8) 70%,
                     transparent 100%
                 );
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
+                backdrop-filter: blur(var(--blur-m));
+                -webkit-backdrop-filter: blur(var(--blur-m));
             }
 
             .logo-img {
                 height: 64px;
                 width: auto;
                 flex-shrink: 0;
-                transition: height 0.3s ease;
+                transition: height 0.3s var(--ease);
                 margin-top: 6px;
             }
 
@@ -963,17 +259,19 @@ const feedsConfig = [
             }
 
             .header-text-container {
-                font-family: var(--font-kr);
-                font-size: 3.5vw;
-                font-weight: 700;
+                font-size: clamp(11px, 3.2vw, 13px);
+                font-weight: var(--fw-b);
                 line-height: 1.4;
-                color: rgba(255, 255, 255, 0.9);
+                color: var(--fg);
                 opacity: 0;
                 transform: translateX(-10px);
                 transition:
-                    opacity 0.4s ease,
-                    transform 0.4s ease;
+                    opacity 0.4s var(--ease),
+                    transform 0.4s var(--ease);
                 white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                min-width: 0;
                 pointer-events: none;
             }
 
@@ -985,89 +283,164 @@ const feedsConfig = [
 
             /* Hero */
             .hero {
-                padding: 40px 24px 30px;
+                padding: 40px var(--sp-4) 30px;
                 text-align: left;
                 position: relative;
             }
             .hero h1 {
-                font-family: "LEMONMILK", sans-serif;
-                font-size: 46px;
+                font-family: var(--font-en);
+                font-size: var(--fs-hero);
                 line-height: 1.1;
-                margin-bottom: 24px;
+                margin-bottom: var(--sp-4);
                 letter-spacing: -1px;
                 text-transform: uppercase;
+                text-wrap: balance;
             }
             .hero p.sub-copy {
-                font-family: var(--font-kr);
                 font-size: 16px;
-                font-weight: 700;
-                color: rgba(255, 255, 255, 0.85);
+                font-weight: var(--fw-b);
+                color: var(--fg-2);
                 letter-spacing: -0.5px;
                 word-break: keep-all;
+                text-wrap: pretty;
                 margin-bottom: 40px;
                 line-height: 1.5;
             }
+            .hero-contact {
+                display: block;
+                margin-top: -4px;
+                padding: 8px 0;
+                text-align: left;
+                font-size: var(--fs-label);
+                color: var(--mut);
+                text-decoration: none;
+                line-height: 1.5;
+            }
+            .hero-contact b {
+                font-weight: var(--fw-b);
+                text-decoration: underline;
+            }
 
-            /* News Cards */
+            /* News Cards — 에디터 .card 글래스 계승 */
             .latest-news {
-                padding: 0 24px 40px;
+                padding: 0 var(--sp-4) 40px;
             }
             .section-title {
                 font-size: 18px;
-                font-weight: 800;
-                margin-bottom: 24px;
+                font-weight: var(--fw-x);
+                margin-bottom: var(--sp-4);
                 display: flex;
                 align-items: center;
                 gap: 8px;
                 letter-spacing: 0.5px;
-                font-family: "LEMONMILK", sans-serif;
+                font-family: var(--font-en);
             }
             .section-title::before {
                 content: "";
                 display: block;
                 width: 4px;
                 height: 18px;
-                background-color: var(--accent-green);
-            }
-            .loading-skeleton {
-                animation: pulse-skeleton 1.5s infinite ease-in-out;
-                pointer-events: none;
-            }
-            .loading-skeleton .news-title {
-                color: rgba(255, 255, 255, 0.5);
-            }
-            @keyframes pulse-skeleton {
-                0% {
-                    opacity: 0.6;
-                }
-                50% {
-                    opacity: 1;
-                }
-                100% {
-                    opacity: 0.6;
-                }
+                border-radius: 2px;
+                background-color: var(--accent);
             }
             .news-card {
-                background-color: var(--card-bg);
-                border: 1px solid var(--border-color);
-                border-radius: 16px;
+                background: linear-gradient(
+                    150deg,
+                    var(--glass) 0%,
+                    var(--glass2) 58%,
+                    rgba(11, 21, 15, 0.6) 100%
+                );
+                backdrop-filter: blur(var(--blur-s));
+                -webkit-backdrop-filter: blur(var(--blur-s));
+                border: 1px solid var(--line);
+                border-radius: var(--r-l);
                 overflow: hidden;
                 margin-bottom: 20px;
-                backdrop-filter: blur(12px);
-                -webkit-backdrop-filter: blur(12px);
+                cursor: pointer;
+                position: relative; /* 스트레치드 링크 앵커 기준(평의회5 C1) */
+                box-shadow:
+                    0 16px 36px rgba(0, 0, 0, 0.32),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
                 transition:
-                    transform 0.2s ease,
-                    border-color 0.3s ease;
+                    transform var(--dur-fast) var(--ease),
+                    border-color 0.15s ease,
+                    box-shadow 0.15s ease;
+                /* 등장 = 촤르륵 스태거(에디터 cardIn 계승) */
+                animation: cardIn 0.34s var(--ease-in) both;
+                animation-delay: calc(var(--i, 0) * 55ms);
+                content-visibility: auto;
+                contain-intrinsic-size: auto 430px; /* 이미지 카드 실측 근사 — 스크롤 점프 완화(평의회6) */
+            }
+            @keyframes cardIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(12px) scale(0.985);
+                }
+                to {
+                    opacity: 1;
+                    transform: none;
+                }
+            }
+            .news-card:hover {
+                border-color: rgba(var(--accent-rgb), 0.3);
             }
             .news-card:active {
-                transform: scale(0.98);
-                border-color: var(--accent-green);
+                transform: scale(var(--press-card));
+                border-color: rgba(var(--accent-rgb), 0.45);
             }
             .news-image {
                 width: 100%;
                 height: 200px;
-                background-color: #0a0e0a;
+                background: linear-gradient(
+                    135deg,
+                    var(--news-ph-1),
+                    var(--news-ph-2)
+                );
                 position: relative;
+            }
+            .news-img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                display: block;
+                position: relative; /* 스켈레톤(::before) 위에 그려지도록 */
+            }
+            /* 로딩 중 스켈레톤 펄스 — img 로드 완료(.loaded) 시 제거 */
+            .news-image::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: linear-gradient(
+                    135deg,
+                    var(--news-ph-1),
+                    var(--news-ph-2)
+                );
+                animation: pulse-skeleton 1.5s ease-in-out infinite;
+            }
+            .news-image.loaded::before {
+                display: none;
+            }
+            @keyframes pulse-skeleton {
+                0%,
+                100% {
+                    opacity: 0.55;
+                }
+                50% {
+                    opacity: 1;
+                }
+            }
+            /* 이미지 저투명 아웃라인 + 하단 그라데(배지 가독) */
+            .news-image::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                pointer-events: none;
+                box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+                background: linear-gradient(
+                    180deg,
+                    transparent 72%,
+                    rgba(2, 4, 2, 0.45) 100%
+                );
             }
             .news-badge {
                 position: absolute;
@@ -1075,155 +448,256 @@ const feedsConfig = [
                 left: 20px;
                 transform: translateY(50%);
                 z-index: 10;
-                background-color: var(--accent-green);
-                color: #000;
+                background-color: var(--accent);
+                color: var(--on-accent);
                 padding: 4px 10px;
-                font-size: 12px;
-                font-family: "LEMONMILK", sans-serif;
-                border-radius: 4px;
+                font-size: var(--fs-sm);
+                font-family: var(--font-en);
+                font-weight: var(--fw-b);
+                border-radius: var(--r-s);
                 text-transform: uppercase;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+            }
+            .news-badge.inline {
+                position: static;
+                transform: none;
+                display: inline-block;
+                margin-bottom: var(--sp-2);
+            }
+            /* 배지 색 = 성향 매핑: 통신사(agency)=라임 accent(기본) · 문화=앰버 · 좌=파랑 · 우=빨강.
+               agency/culture 스타일 부재 시 accent로 뭉개지던 것 교정(평의회2). */
+            .news-badge.bias-culture {
+                background-color: var(--accent-2);
+                color: #1a1205;
+            }
+            .news-badge.bias-left {
+                background-color: var(--bias-l2);
+                color: #fff;
+            }
+            .news-badge.bias-right {
+                background-color: var(--badge-right);
+                color: #fff;
             }
             .news-content {
                 padding: 28px 20px 20px 20px;
             }
             .news-title {
-                font-family: var(--font-kr);
                 font-size: 18px;
-                font-weight: 700;
-                margin-bottom: 12px;
+                font-weight: var(--fw-b);
+                margin-bottom: var(--sp-2);
                 line-height: 1.4;
-                color: #fff;
                 letter-spacing: -0.5px;
+                word-break: keep-all;
+                text-wrap: pretty;
             }
+            /* 스트레치드 링크 — 제목이 실제 <a>, ::after가 카드 전체를 덮어 탭 영역 확보.
+               키보드 포커스·Enter·스크린리더가 공짜로 붙음(평의회5 C1·평의회3). */
+            .news-title a {
+                color: var(--fg);
+                text-decoration: none;
+            }
+            .news-title a::after {
+                content: "";
+                position: absolute;
+                inset: 0;
+                z-index: 1;
+            }
+            .news-card:focus-within {
+                border-color: rgba(var(--accent-rgb), 0.55);
+                box-shadow:
+                    0 16px 36px rgba(0, 0, 0, 0.32),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 0 0 2px rgba(var(--accent-rgb), 0.4);
+            }
+            /* 배지·이미지 등은 링크 오버레이 아래지만 카드 자체가 링크라 클릭 위임됨 */
             .news-meta {
-                font-family: var(--font-kr);
-                font-size: 13px;
-                color: var(--text-muted);
+                font-size: var(--fs-label);
+                color: var(--mut);
                 display: flex;
                 justify-content: space-between;
+                align-items: center;
+            }
+            .news-time {
+                font-variant-numeric: tabular-nums;
+            }
+            /* 1시간 내 신선 기사 = 강조 점등(에디터 신규 신호 응용) */
+            .news-card.fresh .news-time {
+                color: var(--accent);
+                font-weight: var(--fw-b);
+            }
+            .news-card.fresh .news-time::before {
+                content: "";
+                display: inline-block;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: var(--accent);
+                margin-right: 6px;
+                vertical-align: 1px;
+                animation: freshPulse 1.8s ease-in-out infinite;
+            }
+            @keyframes freshPulse {
+                0%,
+                100% {
+                    opacity: 1;
+                    box-shadow: 0 0 6px rgba(var(--accent-rgb), 0.7);
+                }
+                50% {
+                    opacity: 0.45;
+                    box-shadow: 0 0 2px rgba(var(--accent-rgb), 0.3);
+                }
             }
 
-            .no-ads-notice {
-                font-family: var(--font-kr);
-                font-size: 12px;
-                color: #888888;
+            /* 이미지 로드 실패 = 영역 접고 무이미지 변형으로 우아하게 폴백(빈 박스 방지) */
+            .news-card.imgfail .news-image {
+                height: auto;
+                background: none;
+            }
+            .news-card.imgfail .news-image::before,
+            .news-card.imgfail .news-image::after {
+                display: none;
+            }
+            .news-card.imgfail .news-img {
+                display: none;
+            }
+            .news-card.imgfail .news-badge {
+                position: static;
+                transform: none;
+                display: inline-block;
+                margin: 20px 20px 0;
+                box-shadow: none;
+            }
+            .news-card.imgfail .news-content {
+                padding-top: var(--sp-2);
+            }
+
+            .feed-empty {
+                background: var(--glass2);
+                backdrop-filter: blur(var(--blur-s));
+                -webkit-backdrop-filter: blur(var(--blur-s));
+                border: 1px solid var(--line);
+                border-radius: var(--r-l);
+                padding: 40px var(--sp-4);
                 text-align: center;
-                margin-top: 16px;
+                color: var(--mut);
+                margin-bottom: 20px;
             }
 
-            /* Instagram CTA */
+            /* Instagram CTA — 글래스 패널 */
             .instagram-cta {
                 margin: 30px 0 40px;
-                background: rgba(20, 25, 20, 0.6);
-                border: 1px solid rgba(15, 253, 2, 0.4);
-                border-radius: 20px;
-                padding: 40px 24px;
+                background: linear-gradient(
+                    160deg,
+                    var(--glass) 0%,
+                    var(--glass2) 100%
+                );
+                border: 1px solid rgba(var(--accent-rgb), 0.4);
+                border-radius: var(--r-l);
+                padding: 40px var(--sp-4);
                 text-align: center;
-                backdrop-filter: blur(12px);
+                backdrop-filter: blur(var(--blur-m));
+                -webkit-backdrop-filter: blur(var(--blur-m));
+                box-shadow:
+                    0 16px 36px rgba(0, 0, 0, 0.32),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
             }
             .instagram-cta h2 {
-                font-family: "LEMONMILK", sans-serif;
+                font-family: var(--font-en);
                 font-size: 24px;
-                margin-bottom: 12px;
-                color: #fff;
+                margin-bottom: var(--sp-2);
+                color: var(--fg);
+                text-wrap: balance;
             }
             .instagram-cta p {
-                font-family: var(--font-dm);
-                font-weight: 700;
-                font-size: 15px;
+                font-weight: var(--fw-b);
+                font-size: var(--fs-h2);
                 margin-bottom: 28px;
-                color: var(--text-muted);
+                color: var(--mut);
                 line-height: 1.5;
                 word-break: keep-all;
+                text-wrap: pretty;
             }
             .btn-instagram {
                 display: inline-block;
-                background-color: var(--accent-green);
-                color: #000;
+                background-color: var(--accent);
+                color: var(--on-accent);
                 text-decoration: none;
                 padding: 16px 32px;
-                border-radius: 30px;
-                font-family: var(--font-dm);
-                font-weight: 700;
+                border-radius: var(--r-pill);
+                font-weight: var(--fw-b);
                 font-size: 16px;
-                transition: all 0.3s ease;
                 letter-spacing: -0.5px;
                 width: 100%;
-                box-sizing: border-box;
+                transition:
+                    transform var(--dur-fast) var(--ease),
+                    opacity 0.15s ease;
             }
             .btn-instagram:active {
-                transform: translateY(2px);
+                transform: scale(var(--press-l));
                 opacity: 0.9;
             }
 
-            /* Floating Load More Button */
+            /* 플로팅 더보기 — 글래스 원형 FAB. 하단 우측 앵커(본문 텍스트 오클루전 방지·평의회5 W1)
+               + safe-area 인셋(노치/홈인디케이터). TOP 버튼 위에 스택. */
             #floating-load-more {
                 position: fixed;
-                top: 65%;
-                left: 80%;
-                bottom: auto;
-                right: auto;
-                transform: translate(-50%, -50%);
-                margin: 0;
+                bottom: calc(88px + env(safe-area-inset-bottom));
+                right: calc(16px + env(safe-area-inset-right));
                 width: 72px;
                 height: 72px;
                 border-radius: 50%;
-                background: rgba(255, 255, 255, 0.03);
-                backdrop-filter: blur(40px);
-                -webkit-backdrop-filter: blur(40px);
-                border: 1px solid rgba(255, 255, 255, 0.08);
-                color: #ffffff;
-                font-family: "Noto Sans KR", sans-serif;
-                font-weight: 700;
-                font-size: 13px;
+                background: var(--glass2);
+                backdrop-filter: blur(var(--blur-xl));
+                -webkit-backdrop-filter: blur(var(--blur-xl));
+                border: 1px solid var(--line);
+                color: var(--fg);
+                font-family: var(--font-kr);
+                font-weight: var(--fw-b);
+                font-size: var(--fs-label);
                 line-height: 1.3;
                 text-align: center;
                 cursor: pointer;
-                z-index: 999;
+                z-index: 1002;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 padding: 0;
-                transition: none;
-                box-shadow: none;
+                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
                 touch-action: manipulation;
-                -webkit-touch-callout: none;
                 user-select: none;
                 -webkit-user-select: none;
-                pointer-events: auto !important;
-                z-index: 99999;
+                transition: transform var(--dur-fast) var(--ease);
             }
             #floating-load-more:active {
-                transform: scale(0.92);
+                transform: scale(var(--press-m));
             }
 
+            /* TOP — 원형 글래스 + SVG 셰브론(픽토그램 단독). 하단 우측·더보기 아래 스택. */
             #scroll-top-btn {
                 position: fixed;
-                top: 90%;
-                left: 87%;
-                transform: translate(-50%, -50%);
+                bottom: calc(24px + env(safe-area-inset-bottom));
+                right: calc(28px + env(safe-area-inset-right));
                 width: 48px;
                 height: 48px;
-                clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-                background: rgba(255, 255, 255, 0.08);
-                backdrop-filter: blur(24px);
-                -webkit-backdrop-filter: blur(24px);
-                border: none;
+                border-radius: 50%;
+                background: var(--glass2);
+                backdrop-filter: blur(var(--blur-l));
+                -webkit-backdrop-filter: blur(var(--blur-l));
+                border: 1px solid var(--line);
+                color: var(--fg);
                 display: none;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                z-index: 999999;
-                padding-top: 16px;
+                z-index: 1002;
+                box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
+                transition: transform var(--dur-fast) var(--ease);
             }
-            #scroll-top-btn span {
-                color: #fff;
-                font-family: "Noto Sans KR", sans-serif;
-                font-weight: 900;
-                font-size: 9px;
+            #scroll-top-btn svg {
+                display: block;
             }
             #scroll-top-btn:active {
-                transform: translate(-50%, -50%) scale(0.92);
+                transform: scale(var(--press-l));
             }
 
             #scroll-progress {
@@ -1232,7 +706,7 @@ const feedsConfig = [
                 left: 0;
                 height: 2px;
                 width: 0%;
-                background: #0ffd02;
+                background: var(--accent);
                 z-index: 1001;
                 transition: width 0.1s linear;
                 opacity: 0.5;
@@ -1242,45 +716,50 @@ const feedsConfig = [
                 position: absolute;
                 top: 20px;
                 right: 20px;
-                font-family: "Noto Sans KR", sans-serif;
-                font-size: 11px;
-                color: #ffffff;
+                font-size: var(--fs-xs);
+                color: var(--fg);
+                font-variant-numeric: tabular-nums;
                 z-index: 10;
                 transition: opacity 0.3s ease;
             }
             #hero-datetime .accent {
-                color: #0ffd02;
+                color: var(--accent);
             }
 
             /* Footer */
             footer {
-                padding: 40px 24px 60px;
-                border-top: 1px solid var(--border-color);
-                color: var(--text-muted);
-                font-size: 13px;
+                padding: 40px var(--sp-4) 60px;
+                border-top: 1px solid var(--line);
+                color: var(--mut);
+                font-size: var(--fs-label);
                 text-align: center;
-                font-family: var(--font-dm);
-                font-weight: 700;
+                font-weight: var(--fw-b);
             }
             .footer-logo {
                 font-size: 18px;
-                font-family: var(--font-dm);
-                font-weight: 700;
-                margin-bottom: 12px;
+                font-weight: 900;
+                margin-bottom: var(--sp-2);
+                color: var(--fg);
             }
 
-            /* ======== PC STYLES ======== */
+            @media (prefers-reduced-motion: reduce) {
+                .news-card {
+                    animation: none;
+                }
+                .news-card.fresh .news-time::before,
+                .news-image::before {
+                    animation: none;
+                }
+            }
+
+            /* ======== PC (>= 768px) ======== */
             @media (min-width: 768px) {
                 .mobile-view {
                     display: none;
                 }
 
-                /* PC Background Layout Override */
                 .bg-dark-wave {
-                    background-image: url("/assets/background.png");
-                    background-size: cover;
-                    background-position: center;
-                    background-attachment: fixed;
+                    background-attachment: scroll; /* 데스크톱도 고정 합성 불요(고정 레이어라 무의미) */
                 }
 
                 .pc-view {
@@ -1296,12 +775,13 @@ const feedsConfig = [
                 }
 
                 .pc-main-copy {
-                    font-family: "LEMONMILK", sans-serif;
-                    font-size: 72px;
+                    font-family: var(--font-en);
+                    font-size: var(--fs-hero-pc);
                     line-height: 1.1;
                     margin-bottom: 60px;
                     text-transform: uppercase;
                     letter-spacing: -1.5px;
+                    text-wrap: balance;
                 }
 
                 .pc-logo-container {
@@ -1313,51 +793,55 @@ const feedsConfig = [
                 }
 
                 .pc-sub-copy {
-                    font-family: var(--font-kr);
                     font-size: 20px;
-                    font-weight: 700;
-                    color: rgba(255, 255, 255, 0.85);
+                    font-weight: var(--fw-b);
+                    color: var(--fg-2);
                     margin-bottom: 60px;
                     letter-spacing: -0.5px;
+                    text-wrap: pretty;
                 }
 
                 .pc-glass-box {
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    border-radius: 24px;
+                    background: var(--glass2);
+                    border: 1px solid var(--line);
+                    backdrop-filter: blur(var(--blur-l));
+                    -webkit-backdrop-filter: blur(var(--blur-l));
+                    border-radius: var(--r);
                     padding: 40px 60px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                    box-shadow:
+                        0 20px 40px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.1);
                     max-width: 500px;
                 }
 
                 .pc-glass-text {
-                    font-family: var(--font-kr);
                     font-size: 16px;
-                    color: var(--text-main);
+                    color: var(--fg);
                     font-weight: 400;
-                    margin-bottom: 24px;
+                    margin-bottom: var(--sp-4);
                     line-height: 1.6;
                     word-break: keep-all;
+                    text-wrap: pretty;
                     letter-spacing: -0.5px;
                 }
 
                 .pc-qr-img {
                     width: 200px;
                     height: 200px;
-                    border-radius: 12px;
+                    border-radius: var(--r-m);
                     object-fit: contain;
-                    box-shadow: 0 0 20px rgba(15, 253, 2, 0.15);
+                    box-shadow:
+                        0 0 20px rgba(var(--accent-rgb), 0.15),
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.08);
                 }
             }
         </style>
     </head>
     <body>
-        <!-- 1. Background (Image for Mobile and PC) -->
+        <!-- 1. Background -->
         <div class="bg-dark-wave"></div>
 
         <!-- 2. PC View (>= 768px) -->
@@ -1372,14 +856,14 @@ const feedsConfig = [
                 <img src="/assets/logo.png" alt="No Mute Logo" />
             </div>
 
-            <p class="pc-sub-copy kor">
+            <p class="pc-sub-copy">
                 불편한 진실을 대면할 <span class="highlight"
                     >현명한 당신을 위합니다.</span
                 >
             </p>
 
             <div class="pc-glass-box">
-                <p class="pc-glass-text kor">
+                <p class="pc-glass-text">
                     본 사이트는 모바일 환경에 최적화된 공간입니다.<br />아래
                     QR코드를 통해 모바일로 접속해주세요
                 </p>
@@ -1416,23 +900,14 @@ const feedsConfig = [
                             >Truth</span
                         >.
                     </h1>
-                    <p class="sub-copy kor">
+                    <p class="sub-copy">
                         불편한 진실을 대면할 <span class="highlight"
                             >현명한 당신을 위합니다.</span
                         >
                     </p>
-                    <a
-                        href="mailto:contact@nomute.kr"
-                        style="display: block; margin-top: -12px; text-align: left; font-size: 13px; color: #BBBBBB; text-decoration: none; line-height: 1.5;"
-                    >
-                        <span
-                            style="font-family: 'Noto Sans KR', sans-serif; font-weight: bold; text-decoration: underline;"
-                            >Contact</span
-                        ><br />
-                        <span
-                            style="font-family: 'Noto Sans KR', sans-serif; font-weight: normal;"
-                            >Mail: <i>contact@nomute.kr</i></span
-                        >
+                    <a href="mailto:contact@nomute.kr" class="hero-contact">
+                        <b>Contact</b><br />
+                        <span>Mail: <i>contact@nomute.kr</i></span>
                     </a>
                 </section>
 
@@ -1440,138 +915,138 @@ const feedsConfig = [
                     <h2 class="section-title">LATEST DROPS</h2>
 
                     {
-                        feedsConfig.map((feed, index) => {
-                            const hasData =
-                                feed.data && feed.data.title !== "제목 없음";
-                            const hasImage = hasData && feed.data.imageUrl;
-                            return (
-                                <>
-                                    {index === 5 && (
-                                        <div class="instagram-cta">
-                                            <h2>JOIN THE MOVEMENT</h2>
-                                            <p class="kor">
-                                                Instagram에서{" "}
-                                                <span
-                                                    class="highlight"
-                                                    style="font-weight: 700;"
-                                                >
-                                                    no_mute
-                                                </span>
-                                                가 전하는
-                                                <br />
-                                                가장 빠른 이슈 업데이트를
-                                                확인하세요.
-                                            </p>
-                                            <a
-                                                href="https://instagram.com/no_mute"
-                                                class="btn-instagram"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                @no_mute 채널 팔로우
-                                            </a>
-                                        </div>
-                                    )}
-                                    <article
-                                        class="news-card"
-                                        style={
-                                            feed.batch !== 1
-                                                ? "display: none;"
-                                                : ""
-                                        }
-                                        data-link={
-                                            hasData ? feed.data.link : ""
-                                        }
-                                        data-batch={feed.batch}
-                                    >
-                                        {hasImage ? (
-                                            <div class="news-image">
-                                                <div
-                                                    class="news-badge"
-                                                    style={`background-color: ${feed.bg}; color: ${feed.text};`}
-                                                >
-                                                    {feed.badge}
-                                                </div>
-                                                <div
-                                                    style={`width:100%; height:100%; background: url('${feed.data.imageUrl}') center/cover no-repeat, ${feed.grad};`}
-                                                />
-                                            </div>
-                                        ) : null}
-                                        <div class="news-content">
-                                            {!hasImage && (
-                                                <div
-                                                    class="news-badge"
-                                                    style={`background-color: ${feed.bg}; color: ${feed.text}; position: static; transform: none; display: inline-block; margin-bottom: 12px;`}
-                                                >
-                                                    {feed.badge}
-                                                </div>
-                                            )}
-                                            <h3 class="news-title">
-                                                {hasData
-                                                    ? feed.data.title
-                                                    : "기사를 불러올 수 없습니다"}
-                                            </h3>
-                                            <div class="news-meta">
-                                                <span>{feed.source}</span>
-                                                <span class="news-time">
-                                                    {hasData
-                                                        ? formatTimeAgo(
-                                                              feed.data.pubDate,
-                                                          )
-                                                        : "-"}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </article>
-                                    {/* 배치 2~5 마지막 카드 뒤에 팔로우 배너 자동 삽입 */}
-                                    {feed.batch >= 2 && feed.batch <= 5 &&
-                                     (index === feedsConfig.length - 1 || feedsConfig[index + 1]?.batch !== feed.batch) && (
-                                        <div
-                                            class="instagram-cta"
-                                            data-batch={feed.batch}
-                                            style="display:none;"
-                                        >
-                                            <h2>JOIN THE MOVEMENT</h2>
-                                            <p class="kor">
-                                                더 많은 뉴스는 Instagram
-                                                <span
-                                                    class="highlight"
-                                                    style="font-weight: 700;"
-                                                >
-                                                    no_mute
-                                                </span>
-                                                에서 확인하세요.
-                                            </p>
-                                            <a
-                                                href="https://instagram.com/no_mute"
-                                                class="btn-instagram"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                            >
-                                                @no_mute 채널 팔로우
-                                            </a>
-                                        </div>
-                                    )}
-                                </>
-                            );
-                        })
+                        cards.length === 0 && (
+                            <div class="feed-empty">
+                                지금은 뉴스를 불러올 수 없습니다.
+                                <br />
+                                Instagram <span class="highlight">no_mute</span>
+                                에서 최신 이슈를 확인하세요.
+                            </div>
+                        )
                     }
 
-                    <button id="scroll-top-btn" style="display:none;">
-                        <span>TOP</span>
+                    {
+                        cards.map((card, index) => (
+                            <>
+                                {index === 5 && (
+                                    <div class="instagram-cta">
+                                        <h2>JOIN THE MOVEMENT</h2>
+                                        <p>
+                                            Instagram에서{" "}
+                                            <span
+                                                class="highlight"
+                                                style="font-weight:700;"
+                                            >
+                                                no_mute
+                                            </span>
+                                            가 전하는
+                                            <br />
+                                            가장 빠른 이슈 업데이트를
+                                            확인하세요.
+                                        </p>
+                                        <a
+                                            href="https://instagram.com/no_mute"
+                                            class="btn-instagram"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            @no_mute 채널 팔로우
+                                        </a>
+                                    </div>
+                                )}
+                                <article
+                                    class="news-card"
+                                    style={
+                                        card.batch !== 1
+                                            ? "display:none;"
+                                            : `--i:${index};`
+                                    }
+                                    data-batch={card.batch}
+                                >
+                                    {card.imageUrl ? (
+                                        <div class="news-image">
+                                            <img
+                                                class="news-img"
+                                                src={card.imageUrl}
+                                                alt=""
+                                                referrerpolicy="no-referrer"
+                                                loading={
+                                                    card.batch === 1 &&
+                                                    index < 2
+                                                        ? "eager"
+                                                        : "lazy"
+                                                }
+                                                decoding="async"
+                                                onerror="this.closest('.news-card').classList.add('imgfail')"
+                                            />
+                                            <div
+                                                class={`news-badge bias-${card.bias}`}
+                                            >
+                                                {card.badge}
+                                            </div>
+                                        </div>
+                                    ) : null}
+                                    <div class="news-content">
+                                        {!card.imageUrl && (
+                                            <div
+                                                class={`news-badge inline bias-${card.bias}`}
+                                            >
+                                                {card.badge}
+                                            </div>
+                                        )}
+                                        <h3 class="news-title">
+                                            <a
+                                                href={card.link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {card.title}
+                                            </a>
+                                        </h3>
+                                        <div class="news-meta">
+                                            <span>{card.publisher}</span>
+                                            <span
+                                                class="news-time"
+                                                data-pub={card.pubIso ?? ""}
+                                            >
+                                                {timeAgo(card.pubIso)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </article>
+                            </>
+                        ))
+                    }
+
+                    <button id="scroll-top-btn" aria-label="맨 위로">
+                        <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.4"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        >
+                            <path d="M6 15l6-6 6 6"></path>
+                        </svg>
                     </button>
-                    <button id="floating-load-more" style="display: none;">
+                    <button
+                        id="floating-load-more"
+                        data-max-batch={maxBatch}
+                        style="display:none;"
+                    >
                         더<br />보기
                     </button>
 
-                    <div id="end-cta" style="display: none; margin-top: 24px;">
+                    <div id="end-cta" style="display:none; margin-top:24px;">
                         <div class="instagram-cta">
                             <h2>JOIN THE MOVEMENT</h2>
-                            <p class="kor">
+                            <p>
                                 더 많은 뉴스는 Instagram
-                                <span
-                                    class="highlight"
-                                    style="font-weight: 700;">no_mute</span
+                                <span class="highlight" style="font-weight:700;"
+                                    >no_mute</span
                                 >
                                 에서 확인하세요.
                             </p>
@@ -1588,14 +1063,9 @@ const feedsConfig = [
                 </section>
 
                 <footer>
-                    <div
-                        class="footer-logo"
-                        style="font-family: 'Noto Sans KR', sans-serif; font-weight: 900;"
-                    >
-                        노뮤트
-                    </div>
+                    <div class="footer-logo">노뮤트</div>
                     <p>ⓒ 2025-26. No_mute. All rights reserved.</p>
-                    <p style="margin-top: 8px; opacity: 0.5;">
+                    <p style="margin-top:8px; opacity:.5;">
                         Breaking the silence. Speak the truth.
                     </p>
                 </footer>
@@ -1604,102 +1074,188 @@ const feedsConfig = [
 
         <!-- Interactions -->
         <script>
-            // Mobile Header Scroll Effect
             const mobileHeader = document.getElementById("mobile-header");
             const heroSection = document.querySelector(".hero");
-
-            if (mobileHeader && heroSection) {
-                window.addEventListener(
-                    "scroll",
-                    () => {
-                        const heroBottom =
-                            heroSection.getBoundingClientRect().bottom;
-                        const headerHeight = mobileHeader.offsetHeight;
-
-                        if (heroBottom <= headerHeight) {
-                            mobileHeader.classList.add("scrolled");
-                        } else {
-                            mobileHeader.classList.remove("scrolled");
-                        }
-                    },
-                    { passive: true },
-                );
-            }
-
             const progressBar = document.getElementById("scroll-progress");
+            const heroDate = document.getElementById("hero-datetime");
+            const topBtn = document.getElementById("scroll-top-btn");
 
-            function updateDateTime() {
-                const el = document.getElementById("hero-datetime");
-                if (!el) return;
-                const now = new Date();
-                const year = now.getFullYear();
-                const mm = String(now.getMonth() + 1).padStart(2, "0");
-                const dd = String(now.getDate()).padStart(2, "0");
-                let hours = now.getHours();
-                const min = String(now.getMinutes()).padStart(2, "0");
-                const ampm = hours >= 12 ? "PM" : "AM";
-                hours = hours % 12 || 12;
-                const hh = String(hours).padStart(2, "0");
-                const days = ["일", "월", "화", "수", "목", "금", "토"];
-                const day = days[now.getDay()];
+            // ── 스크롤 핸들러 단일화 = rAF 스로틀·레이아웃 읽기 1회 공유(평의회6·10) ──
+            let scrollScheduled = false;
+            function onScrollFrame() {
+                scrollScheduled = false;
+                const scrollTop = window.scrollY;
+                const docHeight =
+                    document.documentElement.scrollHeight - window.innerHeight;
 
-                el.innerHTML = `${year}-<span class="accent">${mm}-${dd} ${day}</span> ${hh}:${min}${ampm}(KST)`;
+                // 헤더 축소 전환
+                if (mobileHeader && heroSection) {
+                    const heroBottom =
+                        heroSection.getBoundingClientRect().bottom;
+                    mobileHeader.classList.toggle(
+                        "scrolled",
+                        heroBottom <= mobileHeader.offsetHeight,
+                    );
+                }
+                // 진행바
+                if (progressBar) {
+                    if (scrollTop > 100 && docHeight > 0) {
+                        progressBar.style.width =
+                            Math.min((scrollTop / docHeight) * 100, 100) + "%";
+                        progressBar.style.opacity = "0.5";
+                    } else {
+                        progressBar.style.opacity = "0";
+                        progressBar.style.width = "0%";
+                    }
+                }
+                // 시계 페이드
+                if (heroDate) heroDate.style.opacity = scrollTop > 10 ? "0" : "1";
+                // TOP 버튼
+                if (topBtn) {
+                    topBtn.style.display =
+                        scrollTop > window.innerHeight ? "flex" : "none";
+                }
             }
-            updateDateTime();
-            setInterval(updateDateTime, 60000);
-
             window.addEventListener(
                 "scroll",
                 () => {
-                    const scrollTop = window.scrollY;
-                    const docHeight =
-                        document.documentElement.scrollHeight -
-                        window.innerHeight;
-
-                    // 헤더가 sticky 상태일 때만 표시 (스크롤 시작 후)
-                    if (scrollTop > 100) {
-                        const progress = (scrollTop / docHeight) * 100;
-                        if (progressBar) {
-                            progressBar.style.width =
-                                Math.min(progress, 100) + "%";
-                            progressBar.style.opacity = "0.5";
-                        }
-                    } else {
-                        if (progressBar) {
-                            progressBar.style.opacity = "0";
-                            progressBar.style.width = "0%";
-                        }
-                    }
-
-                    // 상단 고정바 활성화 시점에 숨김
-                    const el = document.getElementById("hero-datetime");
-                    if (el) {
-                        // 스크롤이 내려가면 숨김, 맨 위로 올라오면 다시 표시 (0 이상의 스크롤 위치 감지)
-                        if (window.scrollY > 10) {
-                            el.style.opacity = "0";
-                        } else {
-                            el.style.opacity = "1";
-                        }
-                    }
+                    if (scrollScheduled) return;
+                    scrollScheduled = true;
+                    requestAnimationFrame(onScrollFrame);
                 },
                 { passive: true },
             );
 
-            // Load More Button Logic (Intersection Observer)
-            const floatingBtn = document.getElementById("floating-load-more");
-            let currentBatch = 1;
-            const maxBatch = 6;
+            // ── 시계 = KST 강제(Intl Asia/Seoul). AM/PM은 dayPeriod 문자열이 아니라
+            //    Asia/Seoul 시(hour) ≥12로 판정(축소 ICU·비-ko 로케일서도 견고·평의회3) ──
+            const kstFmt = new Intl.DateTimeFormat("ko-KR", {
+                timeZone: "Asia/Seoul",
+                year: "numeric",
+                month: "2-digit",
+                day: "2-digit",
+                weekday: "short",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+            });
+            const kstHour24 = new Intl.DateTimeFormat("en-US", {
+                timeZone: "Asia/Seoul",
+                hour: "2-digit",
+                hour12: false,
+            });
+            function updateDateTime() {
+                if (!heroDate) return;
+                const parts: Record<string, string> = {};
+                for (const p of kstFmt.formatToParts(new Date()))
+                    parts[p.type] = p.value;
+                let h24 = parseInt(kstHour24.format(new Date()), 10);
+                if (h24 === 24) h24 = 0; // en-US "24" 자정 방어
+                const ampm = h24 >= 12 ? "PM" : "AM";
+                heroDate.innerHTML = `${parts.year}-<span class="accent">${parts.month}-${parts.day} ${parts.weekday}</span> ${parts.hour}:${parts.minute}${ampm}(KST)`;
+            }
+            updateDateTime();
 
-            if (floatingBtn) {
+            // ── 상대시간 갱신 + 1시간 내 '신선' 점등(가장 최신 N개만·노이즈 억제·평의회5 W5) ──
+            const FRESH_MAX = 4;
+            function refreshTimes() {
+                const now = Date.now();
+                const rows = Array.from(
+                    document.querySelectorAll<HTMLElement>(
+                        ".news-time[data-pub]",
+                    ),
+                );
+                const freshCandidates: Array<{ el: HTMLElement; min: number }> =
+                    [];
+                for (const el of rows) {
+                    const iso = el.dataset.pub;
+                    const card = el.closest(".news-card");
+                    if (!iso) {
+                        card?.classList.remove("fresh");
+                        continue;
+                    }
+                    const t = new Date(iso).getTime();
+                    if (isNaN(t)) {
+                        card?.classList.remove("fresh");
+                        continue;
+                    }
+                    const minutes = Math.max(0, Math.floor((now - t) / 60000));
+                    el.textContent =
+                        minutes < 60
+                            ? minutes < 10
+                                ? "방금 전"
+                                : `${minutes}분 전`
+                            : minutes < 1440
+                              ? `${Math.floor(minutes / 60)}시간 전`
+                              : `${Math.floor(minutes / 1440)}일 전`;
+                    card?.classList.remove("fresh");
+                    if (minutes < 60 && card)
+                        freshCandidates.push({ el, min: minutes });
+                }
+                // 60분 내 후보 중 가장 최신 FRESH_MAX개만 점등
+                freshCandidates
+                    .sort((a, b) => a.min - b.min)
+                    .slice(0, FRESH_MAX)
+                    .forEach(({ el }) =>
+                        el.closest(".news-card")?.classList.add("fresh"),
+                    );
+            }
+            refreshTimes();
+
+            // ── 타이머 = 백그라운드 탭에서 정지(가시성 API·전력 절감·평의회6) ──
+            let clockTimer: number | undefined;
+            let timeTimer: number | undefined;
+            function startTimers() {
+                stopTimers();
+                clockTimer = window.setInterval(updateDateTime, 60000);
+                timeTimer = window.setInterval(refreshTimes, 30000);
+            }
+            function stopTimers() {
+                if (clockTimer) clearInterval(clockTimer);
+                if (timeTimer) clearInterval(timeTimer);
+            }
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) stopTimers();
+                else {
+                    updateDateTime();
+                    refreshTimes();
+                    startTimers();
+                }
+            });
+            startTimers();
+
+            // ── 더보기(배치 로드) — 표시 시 촤르륵 스태거 재생 ──
+            const floatingBtn = document.getElementById(
+                "floating-load-more",
+            ) as HTMLButtonElement | null;
+            const hasCards =
+                document.querySelectorAll(".news-card").length > 0;
+            let currentBatch = 1;
+            const maxBatch = floatingBtn
+                ? parseInt(floatingBtn.dataset.maxBatch || "1", 10)
+                : 1;
+
+            function lastCardOfBatch(batch: number): Element | null {
+                const cards = document.querySelectorAll(
+                    `.news-card[data-batch="${batch}"]`,
+                );
+                return cards.length ? cards[cards.length - 1] : null;
+            }
+
+            function showEndCta() {
+                // 카드가 하나도 없으면(빈 피드) CTA 중복 노출 안 함 — feed-empty 안내만(평의회7 B-4)
+                if (!hasCards) return;
+                const endCta = document.getElementById("end-cta");
+                if (endCta) endCta.style.display = "block";
+            }
+
+            if (floatingBtn && maxBatch > 1) {
                 const observer = new IntersectionObserver(
                     (entries) => {
                         entries.forEach((entry) => {
-                            if (currentBatch >= maxBatch) return; // 더 이상 로드할 게 없으면 무시
-                            if (entry.isIntersecting) {
-                                floatingBtn.style.display = "flex";
-                            } else {
-                                floatingBtn.style.display = "none";
-                            }
+                            if (currentBatch >= maxBatch) return;
+                            floatingBtn.style.display = entry.isIntersecting
+                                ? "flex"
+                                : "none";
                         });
                     },
                     { threshold: 0.3 },
@@ -1707,119 +1263,64 @@ const feedsConfig = [
 
                 function observeLastCard() {
                     observer.disconnect();
-                    const batchBanner = document.querySelector(
-                        `.instagram-cta[data-batch="${currentBatch}"]`,
-                    );
-                    if (batchBanner) {
-                        observer.observe(batchBanner);
-                    } else {
-                        const cards = document.querySelectorAll(
-                            `[data-batch="${currentBatch}"].news-card`,
-                        );
-                        if (cards.length > 0)
-                            observer.observe(cards[cards.length - 1]);
-                    }
+                    const last = lastCardOfBatch(currentBatch);
+                    if (last) observer.observe(last);
                 }
 
                 observeLastCard();
 
                 let isLoading = false;
-                floatingBtn.addEventListener(
-                    "pointerdown",
-                    (e) => {
-                        e.stopPropagation();
-                        if (isLoading) return;
-                        isLoading = true;
+                // click = 마우스·터치·키보드(Enter/Space) 모두 커버(평의회3 접근성)
+                floatingBtn.addEventListener("click", () => {
+                    if (isLoading) return;
+                    isLoading = true;
 
-                        currentBatch++;
-                        // 다음 배치의 카드와 배너를 모두 표시
-                        document
-                            .querySelectorAll(`[data-batch="${currentBatch}"]`)
-                            .forEach((el) => {
-                                (el as HTMLElement).style.display = "block";
-                            });
-                        floatingBtn.style.display = "none";
+                    currentBatch++;
+                    document
+                        .querySelectorAll<HTMLElement>(
+                            `.news-card[data-batch="${currentBatch}"]`,
+                        )
+                        .forEach((el, i) => {
+                            el.style.setProperty("--i", String(i));
+                            el.style.display = "block"; // display 전환 시 cardIn 재생 = 촤르륵
+                        });
+                    floatingBtn.style.display = "none";
 
-                        if (currentBatch >= maxBatch) {
-                            // 마지막 batch → 배너 표시, 버튼 완전 제거
-                            observer.disconnect();
-                            const endCta = document.getElementById("end-cta");
-                            if (endCta) endCta.style.display = "block";
-                            floatingBtn.remove();
-                        } else {
-                            // 다음 batch의 마지막 카드 감시 시작
-                            observeLastCard();
-                        }
+                    if (currentBatch >= maxBatch) {
+                        observer.disconnect();
+                        showEndCta();
+                        floatingBtn.remove();
+                    } else {
+                        observeLastCard();
+                    }
 
-                        setTimeout(() => {
-                            isLoading = false;
-                        }, 300);
+                    setTimeout(() => {
+                        isLoading = false;
+                    }, 300);
 
-                        // DOM 증가에 맞춰 프로그레스바 즉시 비율 재계산
-                        const scrollTop = window.scrollY;
-                        const docHeight =
-                            document.documentElement.scrollHeight -
-                            window.innerHeight;
-                        const progress = (scrollTop / docHeight) * 100;
-                        if (progressBar) {
-                            progressBar.style.width =
-                                Math.min(progress, 100) + "%";
-                        }
-                    },
-                    { passive: false },
-                );
+                    requestAnimationFrame(onScrollFrame); // DOM 증가분 진행바 재계산
+                });
+            } else {
+                showEndCta();
             }
 
-            const topBtn = document.getElementById("scroll-top-btn");
+            // ── TOP 버튼 = click(키보드 포함) ──
             if (topBtn) {
-                topBtn.addEventListener("pointerdown", (e) => {
-                    e.stopPropagation();
+                topBtn.addEventListener("click", () => {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                 });
-
-                window.addEventListener(
-                    "scroll",
-                    () => {
-                        if (window.scrollY > window.innerHeight) {
-                            topBtn.style.display = "flex";
-                        } else {
-                            topBtn.style.display = "none";
-                        }
-                    },
-                    { passive: true },
-                );
             }
 
-            // Mobile card tap interactions and link routing
-            document.querySelectorAll(".news-card").forEach((card) => {
-                const htmlCard = card as HTMLElement;
-                const link = htmlCard.getAttribute("data-link");
-
-                if (link) {
-                    htmlCard.style.cursor = "pointer";
-                    htmlCard.onclick = () => {
-                        window.open(link, "_blank");
-                    };
-                }
-
-                htmlCard.addEventListener("mousedown", () => {
-                    htmlCard.style.transform = "scale(0.98)";
+            // ── 이미지 로드 완료 = 스켈레톤 펄스 해제 ──
+            document
+                .querySelectorAll<HTMLImageElement>(".news-img")
+                .forEach((img) => {
+                    const mark = () =>
+                        img.closest(".news-image")?.classList.add("loaded");
+                    if (img.complete && img.naturalWidth > 0) mark();
+                    else img.addEventListener("load", mark, { once: true });
                 });
-                htmlCard.addEventListener("mouseup", () => {
-                    htmlCard.style.transform = "scale(1)";
-                });
-                htmlCard.addEventListener("mouseleave", () => {
-                    htmlCard.style.transform = "scale(1)";
-                });
-
-                // for touch devices
-                htmlCard.addEventListener("touchstart", () => {
-                    htmlCard.style.transform = "scale(0.98)";
-                });
-                htmlCard.addEventListener("touchend", () => {
-                    htmlCard.style.transform = "scale(1)";
-                });
-            });
+            // 카드 원문 이동은 제목 <a> 스트레치드 링크가 담당(JS click 핸들러 불요·평의회5 C1)
         </script>
     </body>
 </html>
