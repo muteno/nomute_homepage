@@ -1,0 +1,134 @@
+<meta name="color-scheme" content="dark">
+<title>홈페이지 UI/UX 개선 보고 · 260702</title>
+<style>
+  :root{
+    --bg:#0b0d0c; --card:rgba(38,64,46,.30); --card2:rgba(14,26,18,.55);
+    --line:rgba(255,255,255,.10); --accent:#0FFD02; --accent-2:#ff9614;
+    --danger:#ff5b4a; --warn:#ffd24a; --info:#0cd0f7;
+    --fg:#eef7f0; --fg2:#cfd8d0; --mut:#8fa697; --on-accent:#062108;
+    --font:'Pretendard Variable',-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif;
+    --r:16px; --r-s:9px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--fg);font-family:var(--font);line-height:1.6;letter-spacing:-.2px;
+    -webkit-font-smoothing:antialiased;padding:32px 18px 80px}
+  .wrap{max-width:940px;margin:0 auto}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.5px;text-wrap:balance;margin-bottom:6px}
+  h1 .hl{color:var(--accent)}
+  .sub{color:var(--mut);font-size:14px;margin-bottom:28px}
+  h2{font-size:19px;font-weight:800;margin:34px 0 14px;display:flex;align-items:center;gap:9px}
+  h2::before{content:"";width:4px;height:19px;border-radius:2px;background:var(--accent);display:block}
+  h3{font-size:15px;font-weight:700;margin:18px 0 8px;color:var(--fg2)}
+  p{color:var(--fg2);font-size:14.5px;margin-bottom:10px;text-wrap:pretty}
+  .card{background:linear-gradient(150deg,var(--card),var(--card2));border:1px solid var(--line);
+    border-radius:var(--r);padding:18px 20px;margin:14px 0;
+    box-shadow:0 16px 36px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.06)}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:8px 0}
+  th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--mut);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  td.k{color:var(--fg);font-weight:700;white-space:nowrap}
+  .tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 8px;border-radius:999px;letter-spacing:.02em}
+  .t-crit{background:rgba(255,91,74,.16);color:var(--danger);border:1px solid rgba(255,91,74,.4)}
+  .t-warn{background:rgba(255,210,74,.14);color:var(--warn);border:1px solid rgba(255,210,74,.35)}
+  .t-ok{background:rgba(15,253,2,.14);color:var(--accent);border:1px solid rgba(15,253,2,.35)}
+  .t-info{background:rgba(12,208,247,.13);color:var(--info);border:1px solid rgba(12,208,247,.33)}
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0}
+  .ba .col{background:var(--card2);border:1px solid var(--line);border-radius:var(--r-s);padding:13px 15px}
+  .ba .col h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px;color:var(--mut)}
+  .ba .before h4{color:var(--danger)} .ba .after h4{color:var(--accent)}
+  .ba ul{list-style:none;font-size:13px}
+  .ba li{padding:3px 0 3px 16px;position:relative;color:var(--fg2)}
+  .ba li::before{content:"–";position:absolute;left:0;color:var(--mut)}
+  ul.plain{list-style:none;font-size:14px}
+  ul.plain li{padding:4px 0 4px 18px;position:relative;color:var(--fg2)}
+  ul.plain li::before{content:"•";position:absolute;left:2px;color:var(--accent);font-weight:800}
+  .metric{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .metric .m{flex:1;min-width:150px;background:var(--card2);border:1px solid var(--line);border-radius:var(--r-s);padding:13px 15px}
+  .metric .m .big{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+  .metric .m .big .arrow{color:var(--accent)}
+  .metric .m .lbl{font-size:12px;color:var(--mut);margin-top:2px}
+  .note{font-size:13px;color:var(--mut);border-left:2px solid var(--line);padding-left:12px;margin:10px 0}
+  code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:5px;font-size:12.5px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg)}
+  .foot{margin-top:36px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut);font-size:12.5px}
+  @media(max-width:640px){.ba,.metric{grid-template-columns:1fr}}
+</style>
+<div class="wrap">
+  <h1><span class="hl">노뮤트 홈페이지</span> UI/UX 개선 보고</h1>
+  <div class="sub">에디터 디자인 기틀 · RSS 기능 이식 — 260702 · PR #1 (Cloudflare Pages 빌드 ✅)</div>
+
+  <div class="card">
+    <p style="color:var(--fg);font-size:15px"><b>한눈에.</b> 노뮤트 <b>에디터</b>의 디자인 토큰·글래스 카드·스태거·편향 배지와 RSS 파이프라인을 홈페이지에 이식했습니다. 옛 <b>60칸 수동 피드 나열</b>을 <b>자동 편성 엔진</b>으로 대체하고, <b>Opus 10인 적대 평의회</b>로 검증해 발견을 전부 반영했습니다. <b>보안 CRITICAL(저장형 XSS)</b> 1건을 포함해 접근성·대비·성능 결함을 함께 해결했습니다.</p>
+  </div>
+
+  <h2>쉬운 설명 — 무엇이 바뀌었나</h2>
+  <p>홈페이지는 그동안 각 언론사 뉴스를 <b>손으로 60칸 나열</b>했고, 색·버튼·간격도 에디터와 따로 놀았습니다. 이번에 ① 뉴스를 <b>알아서 채우는 편성 엔진</b>으로 바꾸고, ② 에디터에서 쓰던 <b>디자인 값을 그대로 가져와</b> 통일했으며, ③ 폰에서 <b>탭·확대·키보드가 제대로 먹히도록</b> 고치고, ④ 안 쓰는 <b>4.9MB 영상·2.6MB 배경</b>을 걷어내 훨씬 가볍게 만들었습니다.</p>
+
+  <h2>전 / 후 비교</h2>
+  <div class="ba">
+    <div class="col before"><h4>Before</h4><ul>
+      <li>60칸 피드를 코드에 손으로 나열</li>
+      <li>피드 죽으면 "기사를 불러올 수 없습니다" 빈 카드</li>
+      <li>색·버튼이 에디터와 불일치(자체 팔레트)</li>
+      <li>카드가 키보드·스크린리더로 열리지 않음</li>
+      <li>더보기 버튼이 본문 텍스트를 가림(중앙 고정)</li>
+      <li>시계가 접속 기기 시간(가짜 KST)</li>
+      <li>미참조 영상 4.9MB + 배경 PNG 2.6MB</li>
+    </ul></div>
+    <div class="col after"><h4>After</h4><ul>
+      <li>소스 큐→중복제거→성향 슬롯 자동 편성</li>
+      <li>죽은 피드는 폴백이 흡수 = 빈 카드 0</li>
+      <li>에디터 <code>:root</code> 토큰 이식(색·반지름·모션 통일)</li>
+      <li>스트레치드 링크 = 키보드·SR 진입 가능</li>
+      <li>더보기·TOP 하단 우측 앵커+safe-area</li>
+      <li>KST 강제(Intl Asia/Seoul)·상대시간 실시간</li>
+      <li>영상 삭제 + 배경 WebP 26KB</li>
+    </ul></div>
+  </div>
+
+  <h2>효율성 — 측정값</h2>
+  <div class="metric">
+    <div class="m"><div class="big">195s <span class="arrow">→</span> 11s</div><div class="lbl">빌드 시간(초안 라우트 제외·og fetch 동시성)</div></div>
+    <div class="m"><div class="big">2.6MB <span class="arrow">→</span> 26KB</div><div class="lbl">배경 이미지(PNG→WebP·−99%)</div></div>
+    <div class="m"><div class="big">4.9MB <span class="arrow">→</span> 0</div><div class="lbl">미참조 <code>bg-video.mp4</code> 삭제</div></div>
+    <div class="m"><div class="big">3 <span class="arrow">→</span> 1</div><div class="lbl">스크롤 리스너(rAF 단일화·리플로우↓)</div></div>
+  </div>
+  <p class="note">빌드 최악 케이스도 피드 병렬(상한 5s)+og 폴백 동시성 6(상한 25s)로 경계됨. 백그라운드 탭에서 타이머 정지(전력 절감).</p>
+
+  <h2>검증 — Opus 10인 적대 평의회</h2>
+  <p>각기 다른 앵글(RSS 파싱·편성·클라JS·디자인토큰·모바일UX·성능·회귀·빌드·보안·총괄)로 병렬 감사한 뒤 발견을 반영하고 재빌드·Playwright 실측으로 확인했습니다.</p>
+  <table>
+    <tr><th>앵글</th><th>판정</th><th>반영한 핵심 발견</th></tr>
+    <tr><td class="k">보안</td><td><span class="tag t-crit">CRITICAL 해결</span></td><td><code>data-link</code>/<code>img src</code> 속성 탈출 저장형 XSS → <code>new URL().href</code> 정규화(<code>" &lt; &gt;</code> 인코딩)·http(s) allowlist·프로토콜상대 https 승격. og fetch 빌드 SSRF 사설IP 차단. 페이로드 무력화 실측.</td></tr>
+    <tr><td class="k">모바일 UX</td><td><span class="tag t-crit">❌ 3 해결</span></td><td>카드 스트레치드 링크(키보드·SR)·확대 차단 해제·RIGHT 배지 AA(<code>#cf2b1c</code>)·FAB 하단 앵커·헤더 ellipsis·폰트 프리로드</td></tr>
+    <tr><td class="k">성능</td><td><span class="tag t-warn">해결</span></td><td>영상 삭제·배경 WebP·<code>referrerpolicy=no-referrer</code>(핫링크)·rAF 스크롤 단일화·<code>contain-intrinsic-size</code> 보정</td></tr>
+    <tr><td class="k">클라 JS</td><td><span class="tag t-warn">해결</span></td><td>FAB <code>pointerdown</code>→<code>click</code>(키보드 커버)·AM/PM 판정 견고화(시 기반)</td></tr>
+    <tr><td class="k">편성</td><td><span class="tag t-warn">해결</span></td><td>슬롯별 폴백(성향 슬롯=중립 우선 → 소수 성향 전멸 시 반대편 증폭 방지)·<code>normTitle</code> 견고화·배지 색 구분 CSS</td></tr>
+    <tr><td class="k">디자인 토큰</td><td><span class="tag t-warn">해결</span></td><td>카드 눌림 <code>--press-card</code> .99(에디터 <code>.card:active</code> 정본)·TOP <code>--press-l</code>·데드 토큰 정리·raw hex 토큰화·<code>text-wrap</code></td></tr>
+    <tr><td class="k">RSS 파싱</td><td><span class="tag t-ok">✅ +폴백</span></td><td>CDATA·엔티티·enclosure/media 무손실 이관 확인 + Atom <code>link href</code> 폴백 추가</td></tr>
+    <tr><td class="k">회귀</td><td><span class="tag t-ok">✅</span></td><td>의도 변경 6건 정합·소스/메타 무손실 + z-index 복원·dead CSS 제거·빈피드 CTA 중복 제거</td></tr>
+    <tr><td class="k">빌드/배포</td><td><span class="tag t-ok">✅</span></td><td>초안 라우트 미누출·설정 무변경·부분 피드 장애 내성 확인</td></tr>
+  </table>
+
+  <h2>품질 저하 리스크</h2>
+  <ul class="plain">
+    <li><b>낮음 — 시각/기능 회귀.</b> 카드·배지·스태거·더보기·TOP·헤더 전환을 Playwright로 실측 확인. 60개 스트레치드 링크·0 <code>data-link</code>·배지 4색 계산값 검증 완료.</li>
+    <li><b>낮음 — 외부 이미지 실패율.</b> 한국 언론 CDN이 핫링크를 막을 수 있어 <code>referrerpolicy=no-referrer</code>로 성공률을 높이고, 실패 시 카드가 무이미지 변형으로 우아하게 접힘.</li>
+    <li><b>중간(구조적) — 정적 스냅샷.</b> 아래 후속 참고.</li>
+  </ul>
+
+  <h2>후속 — 운영자 확인 필요(이번 범위 밖)</h2>
+  <p>홈페이지는 정적(SSG) 빌드라 <b>기사 셋이 배포 시점에 동결</b>됩니다. 상대시간은 클라이언트가 자기교정하지만 카드 목록 자체는 재배포까지 안 바뀝니다. 아래는 인프라·기틀급이라 승인 후 별도로 다룹니다.</p>
+  <table>
+    <tr><th>항목</th><th>우선</th><th>내용</th></tr>
+    <tr><td class="k">자동 리빌드 크론</td><td><span class="tag t-crit">높음</span></td><td>Cloudflare Deploy Hook + 스케줄(또는 GitHub Actions cron)로 N시간마다 재빌드 → "LATEST DROPS/방금 전"을 진실로 유지. 없으면 뉴스가 오래된 채 굳음.</td></tr>
+    <tr><td class="k">Starlight 제거</td><td><span class="tag t-warn">권장</span></td><td>홈은 자기완결 페이지라 문서 프레임워크 미사용. 안 쓰는 트랜지티브 의존(zod·sitemap)이 빌드 취약점. <b>구조 변경 = 기틀</b>이라 확인 후.</td></tr>
+    <tr><td class="k">LEFT/RIGHT 표기</td><td><span class="tag t-info">판단</span></td><td>매체를 통째 성향 라벨링하는 공개 표기의 편집·평판 판단(기존 동작 유지 중).</td></tr>
+  </table>
+
+  <div class="foot">
+    변경 파일: <code>src/lib/rss.ts</code>·<code>src/lib/feeds.ts</code>(신설) · <code>src/pages/index.astro</code>(재작성) · <code>public/assets/</code>(webp+icon, 영상 삭제) · 초안 3개 <code>src/drafts/</code> 이동.
+    검증: 로컬 빌드 11s · Playwright 모바일/PC 실측 · Opus 10인 평의회.
+    본 보고서는 일회성 스냅샷입니다.
+  </div>
+</div>
