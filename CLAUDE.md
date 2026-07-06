@@ -7,7 +7,7 @@
 - a) 페이지 정본 = `src/pages/index.astro` 단일 파일(인라인 CSS/JS). `src/drafts/` = 빌드 비대상 보관(라우팅 안 됨).
 - b) **디자인 토큰 = `src/pages/index.astro`의 `:root`** — nomute-editor viewer `:root` 이식(값 복사 스냅샷 · 개념 정본은 에디터). 색·radius·간격·blur·타이포·모션·눌림 스케일 전부 여기. 디자인 값은 이 토큰 **계승이 디폴트, raw 즉석 창작 금지** — 홈 전용 축이 필요하면 홈 토큰으로 신설(`--fs-hero` 선례).
 - c) RSS 편성 = `src/lib/feeds.ts`(소스별 큐→중복제거→성향 슬롯) + `src/lib/rss.ts`.
-- d) 빌드 = `npm run build`(astro build) · 개발 = `npm run dev`. 전용 디자인 게이트 스크립트 없음 — 빌드 통과 = 최소 게이트, 토큰 규율은 사람이 지킨다.
+- d) 빌드 = `npm run build`(astro build) · 개발 = `npm run dev`. 배포 = Cloudflare Pages(프로젝트 `nomute` — 커밋·PR마다 프리뷰 URL 자동 코멘트 · 빌드 실패는 PR에서 바로 보임). 전용 디자인 게이트 스크립트 없음 — 빌드 통과 = 최소 게이트, 토큰 규율은 사람이 지킨다.
 - e) 반응형 = 모바일 우선 + 데스크톱 브레이크 `@media (min-width: 768px)` 하나(히어로 타이포 `--fs-hero` 46px / `--fs-hero-pc` 72px 2티어).
 
 ## 2. 🎛 디자인 제안 = 플레이그라운드식 HTML (항상)
