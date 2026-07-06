@@ -25,7 +25,7 @@ function timeAgo(iso: string | null): string {
             name="viewport"
             content="width=device-width, initial-scale=1.0, viewport-fit=cover"
         />
-        <meta name="theme-color" content="#020402" />
+        <meta name="theme-color" content="#0a0e09" /><!-- 상태바 = 웨이브 배경 상단 실측 톤(헤드리스 렌더 픽셀 평균 260706) — manifest theme/background와 한 세트 · meta는 var() 불가라 실측값 복사(에디터 정본 방식 계승) -->
         <title>No Mute - THE VOICE OF THE UNHEARD.</title>
         <meta
             name="description"
@@ -34,6 +34,15 @@ function timeAgo(iso: string | null): string {
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="icon" type="image/png" href="/assets/icon-192.png" />
         <link rel="apple-touch-icon" href="/assets/icon-192.png" />
+
+        <!-- PWA — manifest + iOS 설치 메타(홈화면 추가 = 독립 창·상태바 반투명) -->
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+            name="apple-mobile-web-app-status-bar-style"
+            content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="No Mute" />
 
         <!-- Pretendard(에디터 뷰어와 동일 스택) + 브랜드 영문 헤드라인은 로컬 LEMONMILK -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -80,6 +89,10 @@ function timeAgo(iso: string | null): string {
                 --news-ph-1: #1f251f;
                 --news-ph-2: #0a0e0a;
                 --bg-rgb: 2, 4, 2;
+                /* 웨이브 배경 전용 딥그린 = --glass의 RGB(38,64,46) 사본(hex·rgb 두 표기) —
+                   셰이더 hex 파서·워시 rgba()용 홈 신설 축(에디터 오션 시안·파랑 자리를 브랜드 그린 2톤으로 재배선) */
+                --wave-deep: #26402e;
+                --wave-deep-rgb: 38, 64, 46;
                 /* 반지름 스케일 */
                 --r: 24px;
                 --r-l: 16px;
@@ -145,9 +158,14 @@ function timeAgo(iso: string | null): string {
                 width: 100%;
             }
 
+            html {
+                background: var(--bg); /* 다크 캔버스 담당(리로드 첫 페인트 흰 캔버스 차단) — 에디터 정본 계승 */
+                color-scheme: dark;
+            }
+
             body {
                 font-family: var(--font-kr);
-                background-color: var(--bg);
+                background: transparent; /* ⚠️ 투명 필수(에디터 갓차 계승): html에 배경이 있으면 body 배경은 일반 페인트 순서(음수 z 위)로 칠해져 z-index:-1 고정층(#wavebg 물결·.bgfx)을 통째로 덮는다 */
                 color: var(--fg);
                 font-size: var(--fs-body);
                 line-height: var(--lh-base);
@@ -155,20 +173,37 @@ function timeAgo(iso: string | null): string {
                 -webkit-font-smoothing: antialiased;
             }
 
-            /* 배경 — WebP 우선(2.6MB PNG→26KB·평의회6) + PNG 폴백. 레이어 자체가
-               position:fixed라 background-attachment:fixed 불요(모바일 합성 비용만 유발). */
-            .bg-dark-wave {
+            /* 배경 최하층 = 오션 워시(정적 이미지 .bg-dark-wave 대체 — 에디터 .bgfx 정본 이식,
+               오션 시안·파랑 → 브랜드 그린 2톤 재배선). CSS 즉시 페인트 = 부팅 검정 차단 ·
+               WebGL 실패 폴백 겸용. 구 background.png/webp 자산 = 도먼트 보존(에디터 선례). */
+            .bgfx {
                 position: fixed;
                 inset: 0;
                 z-index: -1;
-                background-color: var(--bg);
-                background-image: url("/assets/background.png");
-                background-image: image-set(
-                    url("/assets/background.webp") type("image/webp"),
-                    url("/assets/background.png") type("image/png")
-                );
-                background-size: cover;
-                background-position: center;
+                pointer-events: none;
+                filter: brightness(1.2) saturate(1.05); /* 에디터 워시 톤 계승 */
+                background:
+                    linear-gradient(
+                        165deg,
+                        rgba(var(--wave-deep-rgb), 0.2),
+                        rgba(var(--accent-rgb), 0.1) 45%,
+                        rgba(0, 0, 0, 0) 78%
+                    ),
+                    var(--bg);
+            }
+            /* 물결 셰이더 캔버스 = .bgfx 위 형제(에디터 #wavebg 정본 이식). WebGL2 미지원·
+               셰이더 실패·컨텍스트 로스트 = .off로 숨겨 .bgfx 워시 폴백 노출. */
+            #wavebg {
+                position: fixed;
+                inset: 0;
+                z-index: -1;
+                pointer-events: none;
+                display: block;
+                width: 100%;
+                height: 100%;
+            }
+            #wavebg.off {
+                display: none;
             }
 
             .highlight {
@@ -625,42 +660,10 @@ function timeAgo(iso: string | null): string {
                 opacity: 0.9;
             }
 
-            /* 플로팅 더보기 — 글래스 원형 FAB. 하단 우측 앵커(본문 텍스트 오클루전 방지·평의회5 W1)
-               + safe-area 인셋(노치/홈인디케이터). TOP 버튼 위에 스택. */
-            #floating-load-more {
-                position: fixed;
-                bottom: calc(88px + env(safe-area-inset-bottom));
-                right: calc(16px + env(safe-area-inset-right));
-                width: 72px;
-                height: 72px;
-                border-radius: 50%;
-                background: var(--glass2);
-                backdrop-filter: blur(var(--blur-xl));
-                -webkit-backdrop-filter: blur(var(--blur-xl));
-                border: 1px solid var(--line);
-                color: var(--fg);
-                font-family: var(--font-kr);
-                font-weight: var(--fw-b);
-                font-size: var(--fs-label);
-                line-height: 1.3;
-                text-align: center;
-                cursor: pointer;
-                z-index: 1002;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 0;
-                box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-                touch-action: manipulation;
-                user-select: none;
-                -webkit-user-select: none;
-                transition: transform var(--dur-fast) var(--ease);
-            }
-            #floating-load-more:active {
-                transform: scale(var(--press-m));
-            }
+            /* (플로팅 더보기 FAB 제거 — 무한 스크롤 자동 로드로 대체 · 운영자 260706
+               "스크롤 내릴 때마다 아래로 쭉". --press-m 토큰은 SSOT 스냅샷 유지) */
 
-            /* TOP — 원형 글래스 + SVG 셰브론(픽토그램 단독). 하단 우측·더보기 아래 스택. */
+            /* TOP — 원형 글래스 + SVG 셰브론(픽토그램 단독). 하단 우측 앵커. */
             #scroll-top-btn {
                 position: fixed;
                 bottom: calc(24px + env(safe-area-inset-bottom));
@@ -746,10 +749,6 @@ function timeAgo(iso: string | null): string {
                     display: none;
                 }
 
-                .bg-dark-wave {
-                    background-attachment: scroll; /* 데스크톱도 고정 합성 불요(고정 레이어라 무의미) */
-                }
-
                 .pc-view {
                     display: flex;
                     flex-direction: column;
@@ -830,7 +829,245 @@ function timeAgo(iso: string | null): string {
     </head>
     <body>
         <!-- 1. Background -->
-        <div class="bg-dark-wave"></div>
+        <div class="bgfx"></div><canvas id="wavebg" aria-hidden="true"></canvas>
+        <!-- wavebg 셰이더 = 캔버스 직후(파싱 초입 가동 = 콜드 스타트 워시만 보이는 구간 최소화 · 에디터 호이스팅 선례 계승) -->
+        <script is:inline>
+            /* ── 물결 배경 (#wavebg) — 에디터 viewer 정본 이식(paper mesh-gradient). 색 = :root 토큰
+               tint(--bg 위 형광그린 --accent·딥그린 --wave-deep·흰색) — 에디터 오션(시안 --bias-l1·
+               파랑 --bias-l2) 자리를 브랜드 그린 2톤으로 재배선(운영자 260706 "느낌 그대로, 브랜드 컬러만").
+               파라미터(강도0.24·dist/swirl/speed/scale/grain)·가드(백그라운드·reduced-motion 정지,
+               WebGL 실패 = .bgfx 워시 폴백 .off) 전부 에디터 동결 계승. 홈 비보유 축 2건만 제외
+               (scr-locked 30fps 다운시프트·dialog[open] 렌더 스킵 — 홈엔 잠금·모달 없음). */
+            (function () {
+                var canvas = document.getElementById("wavebg");
+                if (!canvas) return;
+                var MAX = 10,
+                    FRAME_MS = 8; // ~120fps 상한(에디터 동결) · 가림/백그라운드/reduced-motion 정지로 배터리 방어
+                var VERT =
+                    "#version 300 es\n" +
+                    "in vec2 a_position; out vec2 v_objectUV; uniform float u_scale;\n" +
+                    "void main(){ gl_Position=vec4(a_position,0.,1.); vec2 uv=a_position*0.5; v_objectUV=uv/max(0.001,u_scale); }";
+                var FRAG =
+                    "#version 300 es\n" +
+                    "precision mediump float;\n" +
+                    "uniform float u_time; uniform vec4 u_colors[" +
+                    MAX +
+                    "]; uniform float u_colorsCount;\n" +
+                    "uniform float u_distortion; uniform float u_swirl; uniform float u_grainMixer; uniform float u_grainOverlay;\n" +
+                    "in vec2 v_objectUV; out vec4 fragColor;\n" +
+                    "vec2 rotate(vec2 uv,float th){ return mat2(cos(th),sin(th),-sin(th),cos(th))*uv; }\n" +
+                    "float hash21(vec2 p){ p=fract(p*vec2(0.3183099,0.3678794))+0.1; p+=dot(p,p+19.19); return fract(p.x*p.y); }\n" +
+                    "float valueNoise(vec2 st){ vec2 i=floor(st),f=fract(st); float a=hash21(i),b=hash21(i+vec2(1,0)),c=hash21(i+vec2(0,1)),d=hash21(i+vec2(1,1)); vec2 u=f*f*(3.-2.*f); return mix(mix(a,b,u.x),mix(c,d,u.x),u.y); }\n" +
+                    "float noise(vec2 n,vec2 s){ return valueNoise(n+s); }\n" +
+                    "vec2 getPosition(int i,float t){ float a=float(i)*.37,b=.6+fract(float(i)/3.)*.9,c=.8+fract(float(i+1)/4.); float x=sin(t*b+a),y=cos(t*c+a*1.5); return .5+.5*vec2(x,y); }\n" +
+                    "void main(){ vec2 uv=v_objectUV; uv+=.5; vec2 grainUV=uv*1000.; float grain=noise(grainUV,vec2(0.)); float mixerGrain=.4*u_grainMixer*(grain-.5);\n" +
+                    " float t=.5*(u_time+41.5); float radius=smoothstep(0.,1.,length(uv-.5)); float center=1.-radius;\n" +
+                    " for(float i=1.;i<=2.;i++){ uv.x+=u_distortion*center/i*sin(t+i*.4*smoothstep(.0,1.,uv.y))*cos(.2*t+i*2.4*smoothstep(.0,1.,uv.y)); uv.y+=u_distortion*center/i*cos(t+i*2.*smoothstep(.0,1.,uv.x)); }\n" +
+                    " vec2 uvR=uv-vec2(.5); uvR=rotate(uvR,-3.*u_swirl*radius); uvR+=vec2(.5);\n" +
+                    " vec3 color=vec3(0.); float tw=0.;\n" +
+                    " for(int i=0;i<" +
+                    MAX +
+                    ";i++){ if(i>=int(u_colorsCount)) break; vec2 pos=getPosition(i,t)+mixerGrain; float dist=pow(length(uvR-pos),3.5); float w=1./(dist+1e-3); color+=u_colors[i].rgb*u_colors[i].a*w; tw+=w; }\n" +
+                    " color/=max(1e-4,tw);\n" +
+                    " float go=valueNoise(rotate(grainUV,1.)+vec2(3.)); go=mix(go,valueNoise(rotate(grainUV,2.)+vec2(-1.)),.5); go=pow(go,1.3); float gV=go*2.-1.; float gS=pow(u_grainOverlay*abs(gV),.8); color=mix(color,vec3(step(0.,gV)),.35*gS);\n" +
+                    " fragColor=vec4(color,1.0); }";
+                // 색 = :root 토큰 tint(--bg에 형광그린·딥그린) — 컨텍스트 무관·1회·raw hex 없음
+                var cs = getComputedStyle(document.documentElement);
+                function hx(h) {
+                    h = (h || "").trim() || "#121212"; // 폴백 = --bg 미해결 시만(정상 경로 미발동)
+                    return [
+                        parseInt(h.slice(1, 3), 16) / 255,
+                        parseInt(h.slice(3, 5), 16) / 255,
+                        parseInt(h.slice(5, 7), 16) / 255,
+                    ];
+                }
+                var BG = hx(cs.getPropertyValue("--bg")),
+                    GN = hx(cs.getPropertyValue("--accent")),
+                    DP = hx(cs.getPropertyValue("--wave-deep")); // 그린 2톤 계승(에디터 CY·BL 자리)
+                function mixc(base, c, t) {
+                    t = Math.min(1, t);
+                    return [
+                        base[0] + (c[0] - base[0]) * t,
+                        base[1] + (c[1] - base[1]) * t,
+                        base[2] + (c[2] - base[2]) * t,
+                        1.0,
+                    ];
+                }
+                var INT = 0.24,
+                    WT = [1, 1, 1]; // 강도(에디터 확정값 동결) · WT=흰색(무채 스팟)
+                var COLORS = [
+                    mixc(BG, GN, 0.55 * INT),
+                    mixc(BG, DP, 0.8 * INT),
+                    mixc(BG, GN, 1.1 * INT),
+                    mixc(BG, DP, 0.45 * INT),
+                    mixc(BG, WT, 0.2 * INT),
+                ];
+                var P = {
+                    dist: 0.53,
+                    swirl: 0.34,
+                    speed: 0.33,
+                    scale: 0.86,
+                    grain: 0.12,
+                }; // 에디터 확정 세팅 동결
+                var GRAIN_MIX = 0.15;
+                var flat = new Float32Array(MAX * 4);
+                COLORS.forEach(function (c, i) {
+                    flat.set(c, i * 4);
+                });
+
+                var gl = null,
+                    prog = null,
+                    uni = {},
+                    glbuf = null;
+                var simTime = 0,
+                    lastRender = 0,
+                    raf = 0,
+                    running = false,
+                    lost = false;
+                var reduceMq = matchMedia("(prefers-reduced-motion:reduce)");
+                function isReduce() {
+                    return reduceMq.matches;
+                }
+                function sh(ty, src) {
+                    var o = gl.createShader(ty);
+                    gl.shaderSource(o, src);
+                    gl.compileShader(o);
+                    if (!gl.getShaderParameter(o, gl.COMPILE_STATUS))
+                        throw new Error(gl.getShaderInfoLog(o));
+                    return o;
+                }
+                // GL 초기화 = 최초 + 컨텍스트 로스트 복원 시 재호출. 실패면 .off(.bgfx 워시 폴백)
+                function initGL() {
+                    try {
+                        gl = canvas.getContext("webgl2", {
+                            antialias: false,
+                            premultipliedAlpha: false,
+                        });
+                    } catch (e) {
+                        gl = null;
+                    }
+                    if (!gl) {
+                        canvas.classList.add("off");
+                        return false;
+                    }
+                    try {
+                        prog = gl.createProgram();
+                        gl.attachShader(prog, sh(gl.VERTEX_SHADER, VERT));
+                        gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FRAG));
+                        gl.linkProgram(prog);
+                        if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+                            throw new Error(gl.getProgramInfoLog(prog));
+                    } catch (e) {
+                        canvas.classList.add("off");
+                        return false;
+                    }
+                    gl.useProgram(prog);
+                    glbuf = gl.createBuffer();
+                    gl.bindBuffer(gl.ARRAY_BUFFER, glbuf);
+                    gl.bufferData(
+                        gl.ARRAY_BUFFER,
+                        new Float32Array([-1, -1, 3, -1, -1, 3]),
+                        gl.STATIC_DRAW,
+                    );
+                    var loc = gl.getAttribLocation(prog, "a_position");
+                    gl.enableVertexAttribArray(loc);
+                    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+                    uni = {};
+                    [
+                        "u_time",
+                        "u_colors",
+                        "u_colorsCount",
+                        "u_distortion",
+                        "u_swirl",
+                        "u_grainMixer",
+                        "u_grainOverlay",
+                        "u_scale",
+                    ].forEach(function (n) {
+                        uni[n] = gl.getUniformLocation(prog, n);
+                    });
+                    canvas.classList.remove("off");
+                    sizeBuffer(true);
+                    return true;
+                }
+                function sizeBuffer(force) {
+                    if (!gl) return;
+                    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+                    var w = Math.round(innerWidth * dpr),
+                        h = Math.round(innerHeight * dpr);
+                    if (force || canvas.width !== w || canvas.height !== h) {
+                        canvas.width = w;
+                        canvas.height = h;
+                        gl.viewport(0, 0, w, h);
+                        if (gl && !lost) render(); // 리사이즈 즉시 동기 1프레임 = 아래 워시 비침 플리커 차단(에디터 계승)
+                    }
+                }
+                function render() {
+                    if (!gl || lost) return;
+                    gl.uniform1f(uni.u_time, simTime);
+                    gl.uniform1f(uni.u_distortion, P.dist);
+                    gl.uniform1f(uni.u_swirl, P.swirl);
+                    gl.uniform1f(uni.u_grainMixer, GRAIN_MIX);
+                    gl.uniform1f(uni.u_grainOverlay, P.grain);
+                    gl.uniform1f(uni.u_scale, P.scale);
+                    gl.uniform4fv(uni.u_colors, flat);
+                    gl.uniform1f(uni.u_colorsCount, COLORS.length);
+                    gl.drawArrays(gl.TRIANGLES, 0, 3);
+                }
+                function loop(now) {
+                    raf = running ? requestAnimationFrame(loop) : 0;
+                    if (now - lastRender < FRAME_MS) return;
+                    var dt = Math.min(0.05, (now - lastRender) / 1000);
+                    lastRender = now;
+                    simTime += dt * P.speed * 6.0;
+                    render();
+                }
+                function start() {
+                    if (running || lost || !gl) return;
+                    running = true;
+                    lastRender = 0;
+                    raf = requestAnimationFrame(loop);
+                }
+                function stop() {
+                    running = false;
+                    if (raf) {
+                        cancelAnimationFrame(raf);
+                        raf = 0;
+                    }
+                }
+
+                if (!initGL()) return; // 폴백 확정(.off)
+                addEventListener("resize", function () {
+                    sizeBuffer(false);
+                });
+                if (isReduce()) render();
+                else start(); // reduced-motion = 정적 1프레임(rAF 루프 없음)
+                document.addEventListener("visibilitychange", function () {
+                    if (document.hidden) stop();
+                    else if (!isReduce()) start();
+                }); // 백그라운드/화면꺼짐 정지
+                reduceMq.addEventListener("change", function () {
+                    if (isReduce()) {
+                        stop();
+                        render();
+                    } else start();
+                });
+                // WebGL 컨텍스트 로스트(모바일 GPU 리셋 등) → 즉시 워시 폴백, 복원되면 재빌드 후 재개
+                canvas.addEventListener("webglcontextlost", function (e) {
+                    e.preventDefault();
+                    lost = true;
+                    stop();
+                    canvas.classList.add("off");
+                });
+                canvas.addEventListener("webglcontextrestored", function () {
+                    lost = false;
+                    prog = null;
+                    if (initGL()) {
+                        if (isReduce()) render();
+                        else start();
+                    }
+                });
+            })();
+        </script>
 
         <!-- 2. PC View (>= 768px) -->
         <div class="pc-view">
@@ -899,7 +1136,7 @@ function timeAgo(iso: string | null): string {
                     </a>
                 </section>
 
-                <section class="latest-news">
+                <section class="latest-news" data-max-batch={maxBatch}>
                     <h2 class="section-title">LATEST DROPS</h2>
 
                     {
@@ -1020,14 +1257,6 @@ function timeAgo(iso: string | null): string {
                             <path d="M6 15l6-6 6 6"></path>
                         </svg>
                     </button>
-                    <button
-                        id="floating-load-more"
-                        data-max-batch={maxBatch}
-                        style="display:none;"
-                    >
-                        더<br />보기
-                    </button>
-
                     <div id="end-cta" style="display:none; margin-top:24px;">
                         <div class="instagram-cta">
                             <h2>JOIN THE MOVEMENT</h2>
@@ -1211,15 +1440,18 @@ function timeAgo(iso: string | null): string {
             });
             startTimers();
 
-            // ── 더보기(배치 로드) — 표시 시 촤르륵 스태거 재생 ──
-            const floatingBtn = document.getElementById(
-                "floating-load-more",
-            ) as HTMLButtonElement | null;
+            // ── 무한 스크롤(배치 자동 로드) — 현행 배치 끝 카드가 뷰포트 하단 900px 안에
+            //    들어오면 다음 배치 자동 공개(구 더보기 FAB 클릭 대체 · 운영자 260706 "스크롤
+            //    내릴 때마다 아래로 쭉"). rootMargin = 선로딩 거리 → 도달 전에 미리 열려 끊김 0.
+            //    공개 시 촤르륵 스태거(cardIn)·배치 소진 시 end-cta는 기존 그대로.
+            const feedSection = document.querySelector(
+                ".latest-news",
+            ) as HTMLElement | null;
             const hasCards =
                 document.querySelectorAll(".news-card").length > 0;
             let currentBatch = 1;
-            const maxBatch = floatingBtn
-                ? parseInt(floatingBtn.dataset.maxBatch || "1", 10)
+            const maxBatch = feedSection
+                ? parseInt(feedSection.dataset.maxBatch || "1", 10)
                 : 1;
 
             function lastCardOfBatch(batch: number): Element | null {
@@ -1236,17 +1468,15 @@ function timeAgo(iso: string | null): string {
                 if (endCta) endCta.style.display = "block";
             }
 
-            if (floatingBtn && maxBatch > 1) {
+            if (hasCards && maxBatch > 1) {
                 const observer = new IntersectionObserver(
                     (entries) => {
-                        entries.forEach((entry) => {
-                            if (currentBatch >= maxBatch) return;
-                            floatingBtn.style.display = entry.isIntersecting
-                                ? "flex"
-                                : "none";
-                        });
+                        if (entries.some((e) => e.isIntersecting))
+                            loadNextBatch();
                     },
-                    { threshold: 0.3 },
+                    // observe() 시작 시 초기 상태로도 1회 발화 → 첫 화면이 900px 버퍼보다
+                    // 짧으면 스크롤 없이도 연쇄 로드로 버퍼를 채움(빈 하단 방지)
+                    { rootMargin: "0px 0px 900px 0px", threshold: 0 },
                 );
 
                 function observeLastCard() {
@@ -1255,14 +1485,8 @@ function timeAgo(iso: string | null): string {
                     if (last) observer.observe(last);
                 }
 
-                observeLastCard();
-
-                let isLoading = false;
-                // click = 마우스·터치·키보드(Enter/Space) 모두 커버(평의회3 접근성)
-                floatingBtn.addEventListener("click", () => {
-                    if (isLoading) return;
-                    isLoading = true;
-
+                function loadNextBatch() {
+                    if (currentBatch >= maxBatch) return;
                     currentBatch++;
                     document
                         .querySelectorAll<HTMLElement>(
@@ -1272,22 +1496,18 @@ function timeAgo(iso: string | null): string {
                             el.style.setProperty("--i", String(i));
                             el.style.display = "block"; // display 전환 시 cardIn 재생 = 촤르륵
                         });
-                    floatingBtn.style.display = "none";
 
                     if (currentBatch >= maxBatch) {
                         observer.disconnect();
                         showEndCta();
-                        floatingBtn.remove();
                     } else {
                         observeLastCard();
                     }
 
-                    setTimeout(() => {
-                        isLoading = false;
-                    }, 300);
-
                     requestAnimationFrame(onScrollFrame); // DOM 증가분 진행바 재계산
-                });
+                }
+
+                observeLastCard();
             } else {
                 showEndCta();
             }
@@ -1309,6 +1529,14 @@ function timeAgo(iso: string | null): string {
                     else img.addEventListener("load", mark, { once: true });
                 });
             // 카드 원문 이동은 제목 <a> 스트레치드 링크가 담당(JS click 핸들러 불요·평의회5 C1)
+
+            // ── PWA 서비스워커 — 정책 정본 = public/sw.js(내비 network-first = 뉴스 신선도
+            //    우선·오프라인 캐시 폴백, 동일 오리진 정적 = cache-first). load 후 등록 = 부팅 무간섭.
+            if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                    navigator.serviceWorker.register("/sw.js").catch(() => {});
+                });
+            }
         </script>
     </body>
 </html>
