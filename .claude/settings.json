@@ -6,5 +6,19 @@
       "mcp__github__subscribe_pr_activity",
       "mcp__github__unsubscribe_pr_activity"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/bg_gate.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
