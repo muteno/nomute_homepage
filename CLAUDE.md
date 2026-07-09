@@ -40,3 +40,5 @@
 | `<확립본>` | 레포 내 없음 → `docs/플레이그라운드_포터블.md` §3 골격 스펙만으로 제작 |
 
 상세 스펙·골격 코드·검증 절차·안티패턴 정본 = `docs/플레이그라운드_포터블.md`(여기 본문에 복제 금지 — 드리프트 방지).
+
+MCP 권한 자동 허용 정본 = `.claude/settings.json` permissions.allow(Claude Code Remote 서버 전체 + github PR 구독/해제) — 임의 삭제 금지. 강제는 settings.json이고 이 줄은 기록용.
