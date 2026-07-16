@@ -19,6 +19,18 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR}/.claude/hooks/foundation_hook.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   }
 }
