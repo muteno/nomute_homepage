@@ -146,7 +146,7 @@ MCP 권한 자동 허용 정본 = `.claude/settings.json` permissions.allow(Clau
 - [4] 디자인 진입점 = `src/pages/index.astro`의 `:root`(값 복사 스냅샷 · 개념 정본 = nomute-editor viewer `:root` — 위 §1-b가 정본 서술) · 컴포넌트 = `index.astro` 실물 CSS 실측 발췌(임의 창작 금지).
 - [4] 팔레트 예외 = 선언분 없음.
 - [5] 플레이그라운드 = `docs/reports/{yymmdd}_{라벨}.html`(위 §2 정본 — 커밋 + 채팅 첨부 · 프리뷰 URL 보조).
-- [6] 지시 원장 = 없음(신설 시 `docs/요구사항_큐.md` 관례) · 정본 예시 = 첫 완료 보고 후 채움.
+- [6] 지시 원장 = 없음(신설 시 `docs/요구사항_큐.md` 관례 · 보고 골격 = 최우선 2의 6단 · 예시 블록 폐지).
 - [9] 평의회 대상 예 = `CLAUDE.md` · `src/pages/index.astro`(`:root`·구조) · 상비 게이트 = `npm run build`(§1-d).
 - [11] 딥링크 = 라이브 = Cloudflare Pages(프로젝트 `nomute`) — 대상 화면 앵커·경로로 직행 링크.
 - [9] 머지 절차 조정 = 위 §0-c(머지 전 타 세션 충돌 점검·머지 후 확인 요청)와 병행 — 점검 후 즉시 머지.
