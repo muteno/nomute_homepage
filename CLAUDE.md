@@ -160,7 +160,7 @@ MCP 권한 자동 허용 정본 = `.claude/settings.json` permissions.allow(Clau
 
 ##【레포 바인딩】 공통 골격이 참조하는 이 레포의 정본 값 (레포 고유 · 전파 제외)
 - [E1] 서빙 엔트리(실브라우저 현물 확인) = Astro 정적 · npm ci && npm run build && npm run preview(또는 astro dev) 후 렌더.
-- [E13] QA경로 = Astro 빌드→preview(정적 문서 · 게이트 없음) · 대표데이터 = docs 본문(최장 제목·목차).
+- [E13] QA경로 = 게이트 없음 · 렌더 = `npm ci && npm run build` 후 `dist/` 정적 서빙(빌드 4페이지: index·404·guides/example·reference/example) · **⚠ 반드시 모바일 뷰포트(390×844·isMobile)로 렌더** — 데스크탑 폭은 'QR로 모바일 접속' 안내 가드만 나와 실화면이 안 보임(260725 실측: 데스크탑 본문 115자 vs 모바일 518자) · 대표데이터 = LATEST DROPS 카드(최장 기사 제목 2줄 줄바꿈).
 - [4] 디자인 진입점 = `src/pages/index.astro`의 `:root`(값 복사 스냅샷 · 개념 정본 = nomute-editor viewer `:root` — 위 §1-b가 정본 서술) · 컴포넌트 = `index.astro` 실물 CSS 실측 발췌(임의 창작 금지).
 - [4] 팔레트 예외 = 선언분 없음.
 - [5] 플레이그라운드 = `docs/reports/{yymmdd}_{라벨}.html`(위 §2 정본 — 커밋 + 채팅 첨부 · 프리뷰 URL 보조).
