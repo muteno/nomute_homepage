@@ -995,7 +995,73 @@ function ageClass(iso: string | null): string {
                 color: var(--fg);
             }
 
+            /* ── 정보성 토스트 — 에디터 .nm-toast 정본 셸(위치·말줄임·유령 탭 차단·자동닫힘) ×
+               색 = 에디터 .mini 초록 변형(홈 라임 가족 · 홈은 정보성 단일 변형만).
+               소비처 = 오프라인 폴백 알림 · SW 새 버전 안내(탭 = hardReload) ── */
+            .nm-toast {
+                position: fixed;
+                left: 0;
+                right: 0;
+                margin-inline: auto;
+                bottom: calc(24px + env(safe-area-inset-bottom));
+                transform: translateY(18px);
+                z-index: var(--z-float);
+                width: min(92vw, 430px);
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                padding: 11px 15px;
+                cursor: pointer;
+                background: linear-gradient(
+                    135deg,
+                    rgba(13, 40, 18, 0.95),
+                    rgba(9, 20, 12, 0.95)
+                );
+                border: 1px solid rgba(var(--accent-rgb), 0.45);
+                border-radius: var(--r-m);
+                box-shadow:
+                    0 12px 34px rgba(0, 0, 0, 0.5),
+                    0 0 16px rgba(var(--accent-rgb), 0.18);
+                color: var(--fg);
+                font-size: var(--fs-sm);
+                font-weight: var(--fw-b);
+                line-height: 1.35;
+                backdrop-filter: blur(var(--blur-m)) saturate(1.3);
+                -webkit-backdrop-filter: blur(var(--blur-m)) saturate(1.3);
+                opacity: 0;
+                transition:
+                    opacity 0.3s,
+                    transform 0.3s;
+            }
+            .nm-toast.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            .nm-toast:not(.show) {
+                pointer-events: none; /* 유령 토스트 탭 먹힘 차단(에디터 실측 픽스 계승) */
+            }
+            .nm-toast .tg {
+                flex: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--accent);
+            }
+            .nm-toast .tg svg {
+                display: block;
+            }
+            .nm-toast .ft-msg {
+                flex: 1;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis; /* 두 줄 금지 = 첫 줄 말줄임(에디터 정본) */
+            }
+
             @media (prefers-reduced-motion: reduce) {
+                .nm-toast {
+                    transition: opacity 0.15s;
+                }
                 .news-card {
                     animation: none;
                 }
@@ -1848,13 +1914,88 @@ function ageClass(iso: string | null): string {
                 });
             // 카드 원문 이동은 제목 <a> 스트레치드 링크가 담당(JS click 핸들러 불요·평의회5 C1)
 
+            // ── 정보성 토스트 — 에디터 showToast 이식(홈 = 정보성 단일 변형 · role=status polite ·
+            //    8s 자동닫힘 · 탭 = 액션). 아이콘 = nm-svg.js 정본(SWAP=갱신 · WARN=오프라인) ──
+            const SWAP_SVG =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+            const WARN_SVG =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
+            let nmToastTimer: number | undefined;
+            function nmToast(
+                msg: string,
+                opts?: { icon?: string; onTap?: () => void },
+            ) {
+                let t = document.getElementById("nmToast");
+                if (!t) {
+                    t = document.createElement("div");
+                    t.id = "nmToast";
+                    t.className = "nm-toast";
+                    t.setAttribute("role", "status");
+                    t.setAttribute("aria-live", "polite");
+                    document.body.appendChild(t);
+                }
+                t.innerHTML = `<span class="tg">${opts?.icon ?? SWAP_SVG}</span><span class="ft-msg"></span>`;
+                t.querySelector(".ft-msg")!.textContent = msg;
+                t.onclick = () => {
+                    hideNmToast();
+                    opts?.onTap?.();
+                };
+                requestAnimationFrame(() => t!.classList.add("show"));
+                clearTimeout(nmToastTimer);
+                nmToastTimer = window.setTimeout(hideNmToast, 8000);
+            }
+            function hideNmToast() {
+                document.getElementById("nmToast")?.classList.remove("show");
+                clearTimeout(nmToastTimer);
+            }
+
+            // 강제(하드) 새로고침 = SW·캐시 우회 탈출구(에디터 hardReload 정본 — ?nosw=1 ·
+            // replace = 히스토리 미적재) · PTR·새버전 토스트 공용
+            function hardReload() {
+                try {
+                    const u = new URL(location.href);
+                    u.searchParams.set("nosw", "1");
+                    location.replace(u.href);
+                } catch {
+                    location.reload();
+                }
+            }
+
             // ── PWA 서비스워커 — 정책 정본 = public/sw.js(내비 network-first = 뉴스 신선도
             //    우선·오프라인 캐시 폴백, 동일 오리진 정적 = cache-first). load 후 등록 = 부팅 무간섭.
+            //    새 버전 = updatefound→installed(컨트롤러 존재 시에만 = 최초 설치 제외) 토스트 안내
+            //    (홈은 network-first라 에디터 SWR 셸 diff 불요 — sw.js 바이트 갱신 감지로 충분).
             if ("serviceWorker" in navigator) {
                 window.addEventListener("load", () => {
-                    navigator.serviceWorker.register("/sw.js").catch(() => {});
+                    navigator.serviceWorker
+                        .register("/sw.js")
+                        .then((reg) => {
+                            reg.addEventListener("updatefound", () => {
+                                const w = reg.installing;
+                                if (!w) return;
+                                w.addEventListener("statechange", () => {
+                                    if (
+                                        w.state === "installed" &&
+                                        navigator.serviceWorker.controller
+                                    )
+                                        nmToast(
+                                            "새 버전 준비됨 — 탭하면 반영",
+                                            { onTap: hardReload },
+                                        );
+                                });
+                            });
+                        })
+                        .catch(() => {});
                 });
             }
+            // 오프라인 진입 = 캐시 폴백본 표시 중일 수 있음을 알림(연결 복구 시 갱신 안내)
+            if (!navigator.onLine)
+                nmToast("오프라인 — 마지막 저장본을 표시 중", {
+                    icon: WARN_SVG,
+                });
+            window.addEventListener("online", () =>
+                nmToast("연결 복구 — 탭하면 새로고침", { onTap: hardReload }),
+            );
         </script>
     </body>
 </html>
