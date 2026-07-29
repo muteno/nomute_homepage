@@ -21,7 +21,24 @@ export interface NewsCard {
     publisher: string;
     badge: string;
     bias: Bias;
+    /** 카테고리 6버킷 키(pol·soc·eco·intl·cul·tech) — 비버킷 라벨(종합·오피니언 등)은 '' */
+    cat: string;
     batch: number;
+}
+
+// 대분류 정규화 = 에디터 CAT_MAP/catBucket 정본 이식(시사→사회 · 외교→국제 · 과학/IT/AI→테크 ·
+// 스포츠/연예→문화) → 6버킷 색 키. 비버킷 라벨(종합·오피니언)은 '' = 배지 기본색(라임) 유지.
+const CAT_MAP: Record<string, string> = {
+    사회: "사회", 정치: "정치", 시사: "사회", 경제: "경제", 문화: "문화",
+    국제: "국제", 외교: "국제", 테크: "테크", 과학: "테크", IT: "테크",
+    AI: "테크", 스포츠: "문화", 연예: "문화",
+};
+const CAT_KEY: Record<string, string> = {
+    정치: "pol", 사회: "soc", 경제: "eco", 국제: "intl", 문화: "cul", 테크: "tech",
+};
+export function catBucketKey(label: string): string {
+    const b = CAT_MAP[(label || "").trim()] || "";
+    return CAT_KEY[b] || "";
 }
 
 export const FEED_SOURCES: FeedSource[] = [
@@ -133,6 +150,7 @@ export async function buildCards(): Promise<NewsCard[]> {
                 publisher: pick.src.publisher,
                 badge: pick.src.badge,
                 bias: pick.src.bias,
+                cat: catBucketKey(pick.src.badge),
                 batch,
             });
         }

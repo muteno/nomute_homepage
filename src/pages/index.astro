@@ -6,14 +6,37 @@ import { buildCards } from "../lib/feeds";
 const cards = await buildCards();
 const maxBatch = cards.length ? Math.max(...cards.map((c) => c.batch)) : 1;
 
-// 빌드 시점 초기값 — 클라이언트가 즉시 실시간 갱신(KST 기준 상대시간)
+// 빌드 시점 초기값 — 클라이언트가 즉시 실시간 갱신(pubIso 절대시각 기준)
+// 상대시간 = 에디터 relAge 6단 사다리 정본 이식(<30분 방금 / 30분 전 / N시간 / N일 / N주일 / N개월 ·
+// 9000h sentinel 가드) — 구 3단(방금/시간/일) 폐지 = 정본 정합(운영자 260729 승인 · 클라 사다리와 동문)
+function relAge(h: number): string {
+    if (!isFinite(h) || h < 0 || h >= 9000) return "";
+    const min = h * 60;
+    if (min < 30) return "방금";
+    if (min < 60) return "30분 전";
+    if (h < 24) return Math.floor(h) + "시간 전";
+    const d = Math.floor(h / 24);
+    if (d < 7) return d + "일 전";
+    if (d < 30) return Math.floor(d / 7) + "주일 전";
+    return Math.floor(d / 30) + "개월 전";
+}
+function ageH(iso: string | null): number {
+    if (!iso) return NaN;
+    const t = new Date(iso).getTime();
+    return isNaN(t) ? NaN : (Date.now() - t) / 3600000;
+}
 function timeAgo(iso: string | null): string {
-    if (!iso) return "-";
-    const diffMs = Date.now() - new Date(iso).getTime();
-    const minutes = Math.max(0, Math.floor(diffMs / 60000));
-    if (minutes < 60) return "방금 전";
-    if (minutes < 1440) return Math.floor(minutes / 60) + "시간 전";
-    return Math.floor(minutes / 1440) + "일 전";
+    return relAge(ageH(iso)) || "-";
+}
+
+// 공유 아이콘 = 에디터 nm-svg.js SHARE_SVG 정본 값 복사(원3+선2 · pathLength=1)
+const SHARE_SVG =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path pathLength="1" d="M15.4 6.5l-6.8 4"/><path pathLength="1" d="M8.6 13.5l6.8 4"/></svg>';
+// 시간 색 3단 페이드 = 에디터 dlReport 정본(≤6h 라임 / 7~11h 흰 / 12h↑ 회)
+function ageClass(iso: string | null): string {
+    const h = ageH(iso);
+    if (!isFinite(h) || h < 0 || h >= 9000) return "age-old";
+    return h < 7 ? "age-hot" : h < 12 ? "age-mid" : "age-old";
 }
 ---
 
@@ -71,30 +94,41 @@ function timeAgo(iso: string | null): string {
             :root {
                 /* ── 디자인 토큰 = nomute-editor viewer :root 이식(값 복사 스냅샷 · 정본은 에디터 :root) ── */
                 --bg: #020402; /* 홈 브랜드 딥블랙(기존 유지) */
-                --glass: rgba(38, 64, 46, 0.42);
-                --glass2: rgba(14, 26, 18, 0.55);
+                /* 그린 디톡스(운영자 260729 "초록 색감 빼기") — 글래스 중립화 = 에디터 정본 계승:
+                   --glass2 = 에디터 rgba(18,19,22,.55)(뜬 청회색·녹색끼 폐지 정본 260704) ·
+                   구 --glass(녹색 틴트 .42)는 에디터 선례대로 삭제(사용처 = 실크 글래스 raw로 대체) */
+                --glass2: rgba(18, 19, 22, 0.55);
                 --line: rgba(255, 255, 255, 0.08);
                 --line2: rgba(255, 255, 255, 0.06);
                 --accent: #0ffd02;
                 --accent-rgb: 15, 253, 2;
                 --accent-dim: rgba(15, 253, 2, 0.13);
-                --accent-2: #ff9614; /* 앰버(에디터 --accent-2 계승) — 문화 배지 */
+                --accent-2: #ffe13d; /* 골드레몬 = 에디터 260723 "전 웹앱 레몬→골드레몬 일괄 통일" 계승(구 #ff9614 오렌지 = 에디터 퇴장색) */
+                --on-amber: #241c02; /* 앰버·골드레몬 위 글자(에디터 정본 — 구 #1a1205 브라운 대체) */
                 --on-accent: #062108;
                 --fg: #eef7f0;
                 --fg-2: #cfd8d0;
                 --mut: #8fa697;
+                /* 카테고리 6색 = 에디터 :root --cat-* 정본 값 복사(정치=스카이시안·사회=네온민트·
+                   경제=골드레몬·국제=코랄·문화=네온핑크·테크=네온바이올렛) — 배지 라임 단색 탈피 */
+                --cat-pol: #38c6ff;
+                --cat-soc: #2cf5a5;
+                --cat-eco: #ffe13d;
+                --cat-intl: #ff7a6b;
+                --cat-cul: #ff5ec8;
+                --cat-tech: #ac5cff;
                 /* (LEFT/RIGHT 편향 배지 폐지 — 운영자 260703 "의미 없음" → bias 토큰 제거,
                    배지는 카테고리 라벨만: 통신사/종합/경제/오피니언=라임 · 문화=앰버) */
-                /* 뉴스 이미지 플레이스홀더/스켈레톤 그라데(딥그린 계열 · raw 중복 제거·평의회4) */
-                --news-ph-1: #1f251f;
-                --news-ph-2: #0a0e0a;
+                /* 뉴스 이미지 플레이스홀더/스켈레톤 그라데 — 중립화(그린 디톡스 260729):
+                   에디터 중립 정본 rgb(24,25,28)·#121212 계승(구 딥그린 #1f251f/#0a0e0a) */
+                --news-ph-1: #18191c;
+                --news-ph-2: #121212;
                 --bg-rgb: 2, 4, 2;
                 /* 웨이브 배경 전용 딥그린 = --glass의 RGB(38,64,46) 사본(hex·rgb 두 표기) —
                    셰이더 hex 파서·워시 rgba()용 홈 신설 축(에디터 오션 시안·파랑 자리를 브랜드 그린 2톤으로 재배선) */
                 --wave-deep: #26402e;
                 --wave-deep-rgb: 38, 64, 46;
-                /* 반지름 스케일 */
-                --r: 24px;
+                /* 반지름 스케일(--r 24px = 에디터서 폐지된 옛값 — 최외곽 = --r-l 16px 통일 계승 260729) */
                 --r-l: 16px;
                 --r-m: 11px;
                 --r-s: 9px;
@@ -122,15 +156,21 @@ function timeAgo(iso: string | null): string {
                 /* 홈 전용 디스플레이 타이포(마케팅 히어로 — 앱 스케일 밖이라 별도 토큰) */
                 --fs-hero: 46px;
                 --fs-hero-pc: 72px;
-                /* 모션 */
+                /* 모션(--ease-in → --gauge-ease 개명 260729 — 에디터 정본과 같은 값의 딴 이름이라 계승 사슬 복원) */
                 --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
-                --ease-in: cubic-bezier(0.22, 0.61, 0.36, 1);
+                --gauge-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
                 --dur: 0.18s;
                 --dur-fast: 0.12s;
+                /* z-index 레이어(에디터 스케일 계승 — 토스트·PTR 이식분만 우선 등재) */
+                --z-float: 60; /* 하단 정보성 토스트(.nm-toast) */
+                --z-toast: 90; /* 당겨서 새로고침 링(#ptr) */
                 /* 눌림(:active) scale 사다리 — 클수록 덜 줄임(에디터 --press-* 계승) */
+                --press-pico: 0.72; /* 플레이트 없는 픽토그램-온리 = :active svg만 축소(공유·토스트 버튼) */
                 --press-m: 0.9; /* 더보기 FAB(에디터 .bnav-fab 계승·72px) */
                 --press-l: 0.95; /* 큰 버튼·TOP(.totop 형제) */
                 --press-card: 0.99; /* 카드 = 에디터 .card:active 정본(cardIn 시작 .985와 별개·평의회4) */
+                /* 버튼 크기(에디터 구조 토큰 — 토스트 픽토 버튼 소비분) */
+                --btn-xs: 22px;
                 /* 폰트 스택 */
                 --font-en: "LEMONMILK", "Pretendard Variable", sans-serif;
                 --font-kr: "Pretendard Variable", Pretendard, -apple-system,
@@ -491,14 +531,15 @@ function timeAgo(iso: string | null): string {
                 background-color: var(--accent);
             }
             .news-card {
+                /* 실크 글래스 = 에디터 .card 정본 1:1 계승(그라데 .18/.20 · blur 12 · 그림자 한 벌 —
+                   구 녹색 불투명 스택 .42/.55/.6 폐지 = 더 투명·중립 · 그린 디톡스+글래스모피즘 260729) */
                 background: linear-gradient(
-                    150deg,
-                    var(--glass) 0%,
-                    var(--glass2) 58%,
-                    rgba(11, 21, 15, 0.6) 100%
+                    135deg,
+                    rgba(18, 30, 34, 0.18),
+                    rgba(11, 19, 23, 0.2)
                 );
-                backdrop-filter: blur(var(--blur-s));
-                -webkit-backdrop-filter: blur(var(--blur-s));
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
                 border: 1px solid var(--line);
                 border-radius: var(--r-l);
                 overflow: hidden;
@@ -506,14 +547,14 @@ function timeAgo(iso: string | null): string {
                 cursor: pointer;
                 position: relative; /* 스트레치드 링크 앵커 기준(평의회5 C1) */
                 box-shadow:
-                    0 16px 36px rgba(0, 0, 0, 0.32),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    0 8px 22px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
                 transition:
                     transform var(--dur-fast) var(--ease),
                     border-color 0.15s ease,
                     box-shadow 0.15s ease;
                 /* 등장 = 촤르륵 스태거(에디터 cardIn 계승) */
-                animation: cardIn 0.34s var(--ease-in) both;
+                animation: cardIn 0.34s var(--gauge-ease) both;
                 animation-delay: calc(var(--i, 0) * 55ms);
                 content-visibility: auto;
                 contain-intrinsic-size: auto 430px; /* 이미지 카드 실측 근사 — 스크롤 점프 완화(평의회6) */
@@ -528,8 +569,22 @@ function timeAgo(iso: string | null): string {
                     transform: none;
                 }
             }
-            .news-card:hover {
-                border-color: rgba(var(--accent-rgb), 0.3);
+            /* 호버 리프트 = 에디터 정본(포인터 가드 포함 — 터치기기 hover 고착 차단 ·
+               진입만 느리게 .3s·이탈은 base 스냅 · 모피즘 부양 9px) */
+            @media (hover: hover) and (pointer: fine) {
+                .news-card:hover {
+                    border-color: rgba(var(--accent-rgb), 0.45);
+                    transform: translateY(-9px) scale(1.01);
+                    box-shadow:
+                        0 22px 44px rgba(0, 0, 0, 0.42),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                        0 0 0 1px rgba(var(--accent-rgb), 0.18),
+                        0 0 23px rgba(var(--accent-rgb), 0.16);
+                    transition:
+                        border-color 0.3s ease,
+                        box-shadow 0.3s ease,
+                        transform 0.3s var(--ease);
+                }
             }
             .news-card:active {
                 transform: scale(var(--press-card));
@@ -589,14 +644,20 @@ function timeAgo(iso: string | null): string {
                     rgba(2, 4, 2, 0.45) 100%
                 );
             }
+            /* 배지 = 글래스 필 + 카테고리 색글자(에디터 catChip '박스 없는 색글자' 색 문법 ×
+               홈 이미지 오버레이 = 다크 글래스 필 절충 · 그린 디톡스 260729 — 구 라임 솔리드 필 폐지).
+               색 = --cat-* 6색 정본 · 비버킷(종합·오피니언)만 라임 기본 = 강조색 화면당 2~3곳 규약 복귀 */
             .news-badge {
                 position: absolute;
                 bottom: 0;
                 left: 20px;
                 transform: translateY(50%);
                 z-index: 10;
-                background-color: var(--accent);
-                color: var(--on-accent);
+                background: var(--glass2);
+                backdrop-filter: blur(var(--blur-s));
+                -webkit-backdrop-filter: blur(var(--blur-s));
+                border: 1px solid var(--line);
+                color: var(--accent);
                 padding: 4px 10px;
                 font-size: var(--fs-sm);
                 font-family: var(--font-en);
@@ -611,11 +672,23 @@ function timeAgo(iso: string | null): string {
                 display: inline-block;
                 margin-bottom: var(--sp-2);
             }
-            /* 배지 색 = 카테고리 라벨만: 통신사·종합·경제·오피니언=라임 accent(기본) · 문화=앰버.
-               LEFT/RIGHT 편향 표기는 폐지(운영자 260703). */
-            .news-badge.bias-culture {
-                background-color: var(--accent-2);
-                color: #1a1205;
+            .news-badge.cat-pol {
+                color: var(--cat-pol);
+            }
+            .news-badge.cat-soc {
+                color: var(--cat-soc);
+            }
+            .news-badge.cat-eco {
+                color: var(--cat-eco);
+            }
+            .news-badge.cat-intl {
+                color: var(--cat-intl);
+            }
+            .news-badge.cat-cul {
+                color: var(--cat-cul);
+            }
+            .news-badge.cat-tech {
+                color: var(--cat-tech);
             }
             .news-content {
                 padding: 28px 20px 20px 20px;
@@ -644,8 +717,8 @@ function timeAgo(iso: string | null): string {
             .news-card:focus-within {
                 border-color: rgba(var(--accent-rgb), 0.55);
                 box-shadow:
-                    0 16px 36px rgba(0, 0, 0, 0.32),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 8px 22px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05),
                     0 0 0 2px rgba(var(--accent-rgb), 0.4);
             }
             /* 배지·이미지 등은 링크 오버레이 아래지만 카드 자체가 링크라 클릭 위임됨 */
@@ -658,6 +731,49 @@ function timeAgo(iso: string | null): string {
             }
             .news-time {
                 font-variant-numeric: tabular-nums;
+            }
+            .news-meta .meta-r {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+            }
+            /* 공유 = 픽토-온리 버튼(에디터 SHARE_SVG 정본 · 플레이트 없음 · :active svg만 축소 =
+               --press-pico 티어) — 스트레치드 링크(::after z1) 위 z2로 탭 분리 · 히트영역 28px */
+            .news-share {
+                position: relative;
+                z-index: 2;
+                background: none;
+                border: none;
+                padding: 0;
+                width: 28px;
+                height: 28px;
+                margin: -6px -7px -6px 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--mut);
+                cursor: pointer;
+            }
+            .news-share svg {
+                transition: transform var(--dur-fast) var(--ease);
+            }
+            .news-share:active svg {
+                transform: scale(var(--press-pico));
+            }
+            .news-share.ok {
+                color: var(--accent); /* 복사 완료 ✓ 플래시 = 아이콘 강조색(에디터 .ft-act.ok 문법) */
+            }
+            /* 시간 색 3단 페이드 = 에디터 dlReport 정본(≤6h 라임 / 7~11h 흰 / 12h↑ 회) —
+               신선도가 피드 훑기만으로 읽힘 · .fresh(1h 내) 점등과 자연 중첩(hot ⊃ fresh) */
+            .news-time.age-hot {
+                color: var(--accent);
+                font-weight: var(--fw-b);
+            }
+            .news-time.age-mid {
+                color: var(--fg);
+            }
+            .news-time.age-old {
+                color: var(--mut);
             }
             /* 프레시 카드 테두리 점등 — ref: MengTo css-border-gradient.
                마스크 링 오버레이 방식 = 글래스 배경·backdrop-filter 보존(이중 배경 불가 대안).
@@ -751,10 +867,11 @@ function timeAgo(iso: string | null): string {
             /* Instagram CTA — 글래스 패널 */
             .instagram-cta {
                 margin: 30px 0 40px;
+                /* 실크 글래스 계승(카드와 한 벌 · 그린 틴트 폐지) — 프로스트는 blur-m이 전담 */
                 background: linear-gradient(
-                    160deg,
-                    var(--glass) 0%,
-                    var(--glass2) 100%
+                    135deg,
+                    rgba(18, 30, 34, 0.18),
+                    rgba(11, 19, 23, 0.2)
                 );
                 border: 1px solid rgba(var(--accent-rgb), 0.4);
                 border-radius: var(--r-l);
@@ -763,8 +880,8 @@ function timeAgo(iso: string | null): string {
                 backdrop-filter: blur(var(--blur-m));
                 -webkit-backdrop-filter: blur(var(--blur-m));
                 box-shadow:
-                    0 16px 36px rgba(0, 0, 0, 0.32),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    0 8px 22px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
             }
             .instagram-cta h2 {
                 font-family: var(--font-en);
@@ -913,6 +1030,9 @@ function timeAgo(iso: string | null): string {
                 color: var(--fg);
             }
 
+            /* (PTR·토스트 CSS는 아래 is:global 블록 — JS 생성 요소(#ptr·#nmToast)와
+               html.ptr-on엔 Astro 스코프 클래스가 안 붙어 스코프 스타일이 무효라서 전역 필수 · 260729 실측) */
+
             @media (prefers-reduced-motion: reduce) {
                 .news-card {
                     animation: none;
@@ -985,7 +1105,7 @@ function timeAgo(iso: string | null): string {
                     border: 1px solid var(--line);
                     backdrop-filter: blur(var(--blur-l));
                     -webkit-backdrop-filter: blur(var(--blur-l));
-                    border-radius: var(--r);
+                    border-radius: var(--r-l);
                     padding: 40px 60px;
                     display: flex;
                     flex-direction: column;
@@ -1015,6 +1135,131 @@ function timeAgo(iso: string | null): string {
                     box-shadow:
                         0 0 20px rgba(var(--accent-rgb), 0.15),
                         inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+                }
+            }
+        </style>
+        <style is:global>
+            /* ══ 전역 스타일 — JS가 만드는 요소(#ptr·#nmToast)와 html 클래스는 Astro 스코프
+               클래스가 안 붙으므로 반드시 전역(260729 실측: 스코프 블록에 두면 완전 무효) ══ */
+
+            /* ── 당겨서 새로고침 = 커스텀 링(에디터 정본 1:1 — 네이티브 링 끄고 직접 그림 ·
+               링 색 = --accent 고정 · 스피너 = .cref-ld-sp 문법 계승) ── */
+            html.ptr-on {
+                overscroll-behavior-y: contain; /* 터치기기(JS가 부여)에서만 네이티브 당김 차단 */
+            }
+            #ptr {
+                position: fixed;
+                top: max(8px, env(safe-area-inset-top));
+                left: 50%;
+                z-index: var(--z-toast);
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--glass2);
+                border: 1px solid var(--line);
+                -webkit-backdrop-filter: blur(var(--blur-s));
+                backdrop-filter: blur(var(--blur-s));
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+                transform: translate(-50%, -54px) scale(0.9);
+                opacity: 0;
+                pointer-events: none;
+            }
+            #ptr.show {
+                opacity: 1;
+            }
+            #ptr.armed {
+                box-shadow:
+                    0 6px 22px rgba(0, 0, 0, 0.5),
+                    0 0 16px rgba(var(--accent-rgb), 0.45);
+            }
+            #ptr .ptr-ring {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 2.5px solid rgba(var(--accent-rgb), 0.22);
+                border-top-color: var(--accent);
+                box-shadow: 0 0 9px rgba(var(--accent-rgb), 0.5);
+            }
+            #ptr.spin .ptr-ring {
+                animation: crefspin 0.7s linear infinite;
+            }
+            @keyframes crefspin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* ── 정보성 토스트 — 에디터 .nm-toast 정본 셸(위치·말줄임·유령 탭 차단·자동닫힘) ×
+               색 = 에디터 .mini 초록 변형(홈 라임 가족 · 홈은 정보성 단일 변형만).
+               소비처 = 오프라인 폴백 알림 · SW 새 버전 안내(탭 = hardReload) ── */
+            .nm-toast {
+                position: fixed;
+                left: 0;
+                right: 0;
+                margin-inline: auto;
+                bottom: calc(24px + env(safe-area-inset-bottom));
+                transform: translateY(18px);
+                z-index: var(--z-float);
+                width: min(92vw, 430px);
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                padding: 11px 15px;
+                cursor: pointer;
+                background: linear-gradient(
+                    135deg,
+                    rgba(13, 40, 18, 0.95),
+                    rgba(9, 20, 12, 0.95)
+                );
+                border: 1px solid rgba(var(--accent-rgb), 0.45);
+                border-radius: var(--r-m);
+                box-shadow:
+                    0 12px 34px rgba(0, 0, 0, 0.5),
+                    0 0 16px rgba(var(--accent-rgb), 0.18);
+                color: var(--fg);
+                font-size: var(--fs-sm);
+                font-weight: var(--fw-b);
+                line-height: 1.35;
+                backdrop-filter: blur(var(--blur-m)) saturate(1.3);
+                -webkit-backdrop-filter: blur(var(--blur-m)) saturate(1.3);
+                opacity: 0;
+                transition:
+                    opacity 0.3s,
+                    transform 0.3s;
+            }
+            .nm-toast.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            .nm-toast:not(.show) {
+                pointer-events: none; /* 유령 토스트 탭 먹힘 차단(에디터 실측 픽스 계승) */
+            }
+            .nm-toast .tg {
+                flex: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--accent);
+            }
+            .nm-toast .tg svg {
+                display: block;
+            }
+            .nm-toast .ft-msg {
+                flex: 1;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis; /* 두 줄 금지 = 첫 줄 말줄임(에디터 정본) */
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                #ptr.spin .ptr-ring {
+                    animation-duration: 1.1s;
+                }
+                .nm-toast {
+                    transition: opacity 0.15s;
                 }
             }
         </style>
@@ -1425,7 +1670,7 @@ function timeAgo(iso: string | null): string {
                                                 onerror="this.closest('.news-card').classList.add('imgfail')"
                                             />
                                             <div
-                                                class={`news-badge bias-${card.bias}`}
+                                                class={`news-badge${card.cat ? ` cat-${card.cat}` : ""}`}
                                             >
                                                 {card.badge}
                                             </div>
@@ -1434,7 +1679,7 @@ function timeAgo(iso: string | null): string {
                                     <div class="news-content">
                                         {!card.imageUrl && (
                                             <div
-                                                class={`news-badge inline bias-${card.bias}`}
+                                                class={`news-badge inline${card.cat ? ` cat-${card.cat}` : ""}`}
                                             >
                                                 {card.badge}
                                             </div>
@@ -1450,11 +1695,22 @@ function timeAgo(iso: string | null): string {
                                         </h3>
                                         <div class="news-meta">
                                             <span>{card.publisher}</span>
-                                            <span
-                                                class="news-time"
-                                                data-pub={card.pubIso ?? ""}
-                                            >
-                                                {timeAgo(card.pubIso)}
+                                            <span class="meta-r">
+                                                <span
+                                                    class={`news-time ${ageClass(card.pubIso)}`}
+                                                    data-pub={card.pubIso ?? ""}
+                                                >
+                                                    {timeAgo(card.pubIso)}
+                                                </span>
+                                                <button
+                                                    class="news-share"
+                                                    type="button"
+                                                    aria-label="기사 공유"
+                                                    title="기사 공유"
+                                                    data-url={card.link}
+                                                    data-title={card.title}
+                                                    set:html={SHARE_SVG}
+                                                />
                                             </span>
                                         </div>
                                     </div>
@@ -1593,7 +1849,19 @@ function timeAgo(iso: string | null): string {
             updateDateTime();
 
             // ── 상대시간 갱신 + 1시간 내 '신선' 점등(가장 최신 N개만·노이즈 억제·평의회5 W5) ──
+            // 사다리·색 페이드 = 에디터 relAge/dlReport 정본(서버 frontmatter와 동문 — 드리프트 차단)
             const FRESH_MAX = 4;
+            function relAgeC(h: number): string {
+                if (!isFinite(h) || h < 0 || h >= 9000) return "";
+                const min = h * 60;
+                if (min < 30) return "방금";
+                if (min < 60) return "30분 전";
+                if (h < 24) return Math.floor(h) + "시간 전";
+                const d = Math.floor(h / 24);
+                if (d < 7) return d + "일 전";
+                if (d < 30) return Math.floor(d / 7) + "주일 전";
+                return Math.floor(d / 30) + "개월 전";
+            }
             function refreshTimes() {
                 const now = Date.now();
                 const rows = Array.from(
@@ -1615,15 +1883,19 @@ function timeAgo(iso: string | null): string {
                         card?.classList.remove("fresh");
                         continue;
                     }
+                    const h = (now - t) / 3600000;
                     const minutes = Math.max(0, Math.floor((now - t) / 60000));
-                    el.textContent =
-                        minutes < 60
-                            ? minutes < 10
-                                ? "방금 전"
-                                : `${minutes}분 전`
-                            : minutes < 1440
-                              ? `${Math.floor(minutes / 60)}시간 전`
-                              : `${Math.floor(minutes / 1440)}일 전`;
+                    el.textContent = relAgeC(h) || "-";
+                    el.classList.remove("age-hot", "age-mid", "age-old");
+                    el.classList.add(
+                        !isFinite(h) || h < 0 || h >= 9000
+                            ? "age-old"
+                            : h < 7
+                              ? "age-hot"
+                              : h < 12
+                                ? "age-mid"
+                                : "age-old",
+                    );
                     card?.classList.remove("fresh");
                     if (minutes < 60 && card)
                         freshCandidates.push({ el, min: minutes });
@@ -1750,13 +2022,249 @@ function timeAgo(iso: string | null): string {
                 });
             // 카드 원문 이동은 제목 <a> 스트레치드 링크가 담당(JS click 핸들러 불요·평의회5 C1)
 
+            // ── 카드 공유 — 에디터 정본(navigator.share → 실패/미지원 = 클립보드 복사 + ✓ 플래시).
+            //    위임 리스너 1개 = 무한 스크롤 배치 카드에도 자동 적용 ──
+            const CHECK_SVG =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+            document.addEventListener("click", async (ev) => {
+                const btn = (ev.target as HTMLElement).closest<HTMLElement>(
+                    ".news-share",
+                );
+                if (!btn) return;
+                ev.preventDefault();
+                ev.stopPropagation();
+                const url = btn.dataset.url || location.href;
+                const title = btn.dataset.title || document.title;
+                try {
+                    if (!navigator.share) throw new Error("unsupported");
+                    await navigator.share({ title, url });
+                } catch {
+                    try {
+                        await navigator.clipboard.writeText(url);
+                    } catch {}
+                    const old = btn.innerHTML;
+                    btn.innerHTML = CHECK_SVG;
+                    btn.classList.add("ok");
+                    setTimeout(() => {
+                        btn.innerHTML = old;
+                        btn.classList.remove("ok");
+                    }, 1200);
+                }
+            });
+
+            // ── 정보성 토스트 — 에디터 showToast 이식(홈 = 정보성 단일 변형 · role=status polite ·
+            //    8s 자동닫힘 · 탭 = 액션). 아이콘 = nm-svg.js 정본(SWAP=갱신 · WARN=오프라인) ──
+            const SWAP_SVG =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>';
+            const WARN_SVG =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>';
+            let nmToastTimer: number | undefined;
+            function nmToast(
+                msg: string,
+                opts?: { icon?: string; onTap?: () => void },
+            ) {
+                let t = document.getElementById("nmToast");
+                if (!t) {
+                    t = document.createElement("div");
+                    t.id = "nmToast";
+                    t.className = "nm-toast";
+                    t.setAttribute("role", "status");
+                    t.setAttribute("aria-live", "polite");
+                    document.body.appendChild(t);
+                }
+                t.innerHTML = `<span class="tg">${opts?.icon ?? SWAP_SVG}</span><span class="ft-msg"></span>`;
+                t.querySelector(".ft-msg")!.textContent = msg;
+                t.onclick = () => {
+                    hideNmToast();
+                    opts?.onTap?.();
+                };
+                requestAnimationFrame(() => t!.classList.add("show"));
+                clearTimeout(nmToastTimer);
+                nmToastTimer = window.setTimeout(hideNmToast, 8000);
+            }
+            function hideNmToast() {
+                document.getElementById("nmToast")?.classList.remove("show");
+                clearTimeout(nmToastTimer);
+            }
+
+            // 강제(하드) 새로고침 = SW·캐시 우회 탈출구(에디터 hardReload 정본 — ?nosw=1 ·
+            // replace = 히스토리 미적재) · PTR·새버전 토스트 공용
+            function hardReload() {
+                try {
+                    const u = new URL(location.href);
+                    u.searchParams.set("nosw", "1");
+                    location.replace(u.href);
+                } catch {
+                    location.reload();
+                }
+            }
+
             // ── PWA 서비스워커 — 정책 정본 = public/sw.js(내비 network-first = 뉴스 신선도
             //    우선·오프라인 캐시 폴백, 동일 오리진 정적 = cache-first). load 후 등록 = 부팅 무간섭.
+            //    새 버전 = updatefound→installed(컨트롤러 존재 시에만 = 최초 설치 제외) 토스트 안내
+            //    (홈은 network-first라 에디터 SWR 셸 diff 불요 — sw.js 바이트 갱신 감지로 충분).
             if ("serviceWorker" in navigator) {
                 window.addEventListener("load", () => {
-                    navigator.serviceWorker.register("/sw.js").catch(() => {});
+                    navigator.serviceWorker
+                        .register("/sw.js")
+                        .then((reg) => {
+                            reg.addEventListener("updatefound", () => {
+                                const w = reg.installing;
+                                if (!w) return;
+                                w.addEventListener("statechange", () => {
+                                    if (
+                                        w.state === "installed" &&
+                                        navigator.serviceWorker.controller
+                                    )
+                                        nmToast(
+                                            "새 버전 준비됨 — 탭하면 반영",
+                                            { onTap: hardReload },
+                                        );
+                                });
+                            });
+                        })
+                        .catch(() => {});
                 });
             }
+            // 오프라인 진입 = 캐시 폴백본 표시 중일 수 있음을 알림(연결 복구 시 갱신 안내)
+            if (!navigator.onLine)
+                nmToast("오프라인 — 마지막 저장본을 표시 중", {
+                    icon: WARN_SVG,
+                });
+            window.addEventListener("online", () =>
+                nmToast("연결 복구 — 탭하면 새로고침", { onTap: hardReload }),
+            );
+
+            // ── 당겨서 새로고침(에디터 PTR 정본 이식 — 홈은 팝업·캐러셀이 없어 blocked()=발동중만.
+            //    임계 70·최대 130·고무줄 .62·armed 글로우·bfcache 잔존 해제 전부 정본 값) ──
+            (function () {
+                if (!("ontouchstart" in window)) return; // 터치 기기 전용
+                document.documentElement.classList.add("ptr-on");
+                const ptr = document.createElement("div");
+                ptr.id = "ptr";
+                ptr.setAttribute("aria-hidden", "true");
+                ptr.innerHTML = '<div class="ptr-ring"></div>';
+                document.body.appendChild(ptr);
+                const ring =
+                    ptr.querySelector<HTMLElement>(".ptr-ring")!;
+                const TRIG = 70,
+                    MAXP = 130;
+                let sy = 0,
+                    sx = 0,
+                    active = false,
+                    engaged = false,
+                    dist = 0,
+                    armed = false,
+                    firing = false;
+                const atTop = () =>
+                    (window.scrollY ||
+                        document.documentElement.scrollTop ||
+                        0) <= 0;
+                const blocked = () => firing;
+                function reset(soft: boolean) {
+                    active = false;
+                    engaged = false;
+                    dist = 0;
+                    armed = false;
+                    ptr.style.transition = soft
+                        ? "transform .24s var(--ease), opacity .24s var(--ease)"
+                        : "none";
+                    ptr.classList.remove("show", "spin", "armed");
+                    ptr.style.transform = "translate(-50%,-54px) scale(.9)";
+                    ring.style.transform = "";
+                    ptr.style.willChange = "auto";
+                }
+                addEventListener(
+                    "touchstart",
+                    (e) => {
+                        if (
+                            active ||
+                            blocked() ||
+                            !atTop() ||
+                            e.touches.length !== 1
+                        )
+                            return;
+                        sy = e.touches[0].clientY;
+                        sx = e.touches[0].clientX;
+                        active = true;
+                        engaged = false;
+                        dist = 0;
+                        armed = false;
+                        ptr.style.transition = "none";
+                        ptr.style.willChange = "transform, opacity"; // 제스처 중에만 레이어 승격
+                    },
+                    { passive: true },
+                );
+                addEventListener(
+                    "touchmove",
+                    (e) => {
+                        if (!active) return;
+                        if (e.touches.length !== 1) {
+                            reset(true);
+                            return;
+                        } // 핀치 = 양보
+                        const dy = e.touches[0].clientY - sy,
+                            dx = e.touches[0].clientX - sx;
+                        if (!engaged) {
+                            if (dy > 8 && dy > Math.abs(dx) * 1.3 && atTop())
+                                engaged = true;
+                            else if (
+                                Math.abs(dx) > 10 ||
+                                dy < -6 ||
+                                !atTop()
+                            ) {
+                                active = false;
+                                ptr.style.willChange = "auto";
+                                return;
+                            } else return;
+                        }
+                        if (!atTop()) {
+                            reset(true);
+                            return;
+                        }
+                        e.preventDefault();
+                        dist = Math.min(dy, MAXP);
+                        const pull = Math.min(dist * 0.62, 80); // 고무줄 저항감
+                        ptr.classList.add("show");
+                        ptr.style.transform = `translate(-50%, ${pull}px) scale(${0.9 + Math.min(dist / TRIG, 1) * 0.1})`;
+                        ring.style.transform = `rotate(${dist * 2.6}deg)`;
+                        armed = dist >= TRIG;
+                        ptr.classList.toggle("armed", armed);
+                    },
+                    { passive: false },
+                );
+                function end() {
+                    if (!engaged) {
+                        if (active) reset(false);
+                        return;
+                    }
+                    if (armed) {
+                        firing = true;
+                        active = false;
+                        engaged = false;
+                        ptr.style.transition = "transform .2s var(--ease)";
+                        ptr.style.transform = "translate(-50%, 42px) scale(1)";
+                        ring.style.transform = "";
+                        ptr.classList.add("spin");
+                        setTimeout(hardReload, 360); // 강제 새로고침(?nosw=1 = 캐시 우회)
+                    } else reset(true);
+                }
+                addEventListener("touchend", end, { passive: true });
+                addEventListener(
+                    "touchcancel",
+                    () => {
+                        if (!firing) reset(true);
+                    },
+                    { passive: true },
+                );
+                // bfcache 복귀 = firing/spin 잔존 해제(영구 먹통 방지)
+                addEventListener("pageshow", (e) => {
+                    if (e.persisted) {
+                        firing = false;
+                        reset(false);
+                    }
+                });
+            })();
         </script>
     </body>
 </html>
