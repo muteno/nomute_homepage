@@ -28,6 +28,10 @@ function ageH(iso: string | null): number {
 function timeAgo(iso: string | null): string {
     return relAge(ageH(iso)) || "-";
 }
+
+// 공유 아이콘 = 에디터 nm-svg.js SHARE_SVG 정본 값 복사(원3+선2 · pathLength=1)
+const SHARE_SVG =
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path pathLength="1" d="M15.4 6.5l-6.8 4"/><path pathLength="1" d="M8.6 13.5l6.8 4"/></svg>';
 // 시간 색 3단 페이드 = 에디터 dlReport 정본(≤6h 라임 / 7~11h 흰 / 12h↑ 회)
 function ageClass(iso: string | null): string {
     const h = ageH(iso);
@@ -727,6 +731,37 @@ function ageClass(iso: string | null): string {
             }
             .news-time {
                 font-variant-numeric: tabular-nums;
+            }
+            .news-meta .meta-r {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+            }
+            /* 공유 = 픽토-온리 버튼(에디터 SHARE_SVG 정본 · 플레이트 없음 · :active svg만 축소 =
+               --press-pico 티어) — 스트레치드 링크(::after z1) 위 z2로 탭 분리 · 히트영역 28px */
+            .news-share {
+                position: relative;
+                z-index: 2;
+                background: none;
+                border: none;
+                padding: 0;
+                width: 28px;
+                height: 28px;
+                margin: -6px -7px -6px 0;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--mut);
+                cursor: pointer;
+            }
+            .news-share svg {
+                transition: transform var(--dur-fast) var(--ease);
+            }
+            .news-share:active svg {
+                transform: scale(var(--press-pico));
+            }
+            .news-share.ok {
+                color: var(--accent); /* 복사 완료 ✓ 플래시 = 아이콘 강조색(에디터 .ft-act.ok 문법) */
             }
             /* 시간 색 3단 페이드 = 에디터 dlReport 정본(≤6h 라임 / 7~11h 흰 / 12h↑ 회) —
                신선도가 피드 훑기만으로 읽힘 · .fresh(1h 내) 점등과 자연 중첩(hot ⊃ fresh) */
@@ -1652,11 +1687,22 @@ function ageClass(iso: string | null): string {
                                         </h3>
                                         <div class="news-meta">
                                             <span>{card.publisher}</span>
-                                            <span
-                                                class={`news-time ${ageClass(card.pubIso)}`}
-                                                data-pub={card.pubIso ?? ""}
-                                            >
-                                                {timeAgo(card.pubIso)}
+                                            <span class="meta-r">
+                                                <span
+                                                    class={`news-time ${ageClass(card.pubIso)}`}
+                                                    data-pub={card.pubIso ?? ""}
+                                                >
+                                                    {timeAgo(card.pubIso)}
+                                                </span>
+                                                <button
+                                                    class="news-share"
+                                                    type="button"
+                                                    aria-label="기사 공유"
+                                                    title="기사 공유"
+                                                    data-url={card.link}
+                                                    data-title={card.title}
+                                                    set:html={SHARE_SVG}
+                                                />
                                             </span>
                                         </div>
                                     </div>
@@ -1967,6 +2013,36 @@ function ageClass(iso: string | null): string {
                     else img.addEventListener("load", mark, { once: true });
                 });
             // 카드 원문 이동은 제목 <a> 스트레치드 링크가 담당(JS click 핸들러 불요·평의회5 C1)
+
+            // ── 카드 공유 — 에디터 정본(navigator.share → 실패/미지원 = 클립보드 복사 + ✓ 플래시).
+            //    위임 리스너 1개 = 무한 스크롤 배치 카드에도 자동 적용 ──
+            const CHECK_SVG =
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>';
+            document.addEventListener("click", async (ev) => {
+                const btn = (ev.target as HTMLElement).closest<HTMLElement>(
+                    ".news-share",
+                );
+                if (!btn) return;
+                ev.preventDefault();
+                ev.stopPropagation();
+                const url = btn.dataset.url || location.href;
+                const title = btn.dataset.title || document.title;
+                try {
+                    if (!navigator.share) throw new Error("unsupported");
+                    await navigator.share({ title, url });
+                } catch {
+                    try {
+                        await navigator.clipboard.writeText(url);
+                    } catch {}
+                    const old = btn.innerHTML;
+                    btn.innerHTML = CHECK_SVG;
+                    btn.classList.add("ok");
+                    setTimeout(() => {
+                        btn.innerHTML = old;
+                        btn.classList.remove("ok");
+                    }, 1200);
+                }
+            });
 
             // ── 정보성 토스트 — 에디터 showToast 이식(홈 = 정보성 단일 변형 · role=status polite ·
             //    8s 자동닫힘 · 탭 = 액션). 아이콘 = nm-svg.js 정본(SWAP=갱신 · WARN=오프라인) ──
