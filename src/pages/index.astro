@@ -1030,127 +1030,10 @@ function ageClass(iso: string | null): string {
                 color: var(--fg);
             }
 
-            /* ── 당겨서 새로고침 = 커스텀 링(에디터 정본 1:1 — 네이티브 링 끄고 직접 그림 ·
-               링 색 = --accent 고정 · 스피너 = .cref-ld-sp 문법 계승) ── */
-            html.ptr-on {
-                overscroll-behavior-y: contain; /* 터치기기(JS가 부여)에서만 네이티브 당김 차단 */
-            }
-            #ptr {
-                position: fixed;
-                top: max(8px, env(safe-area-inset-top));
-                left: 50%;
-                z-index: var(--z-toast);
-                width: 36px;
-                height: 36px;
-                border-radius: 50%;
-                display: grid;
-                place-items: center;
-                background: var(--glass2);
-                border: 1px solid var(--line);
-                -webkit-backdrop-filter: blur(var(--blur-s));
-                backdrop-filter: blur(var(--blur-s));
-                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
-                transform: translate(-50%, -54px) scale(0.9);
-                opacity: 0;
-                pointer-events: none;
-            }
-            #ptr.show {
-                opacity: 1;
-            }
-            #ptr.armed {
-                box-shadow:
-                    0 6px 22px rgba(0, 0, 0, 0.5),
-                    0 0 16px rgba(var(--accent-rgb), 0.45);
-            }
-            #ptr .ptr-ring {
-                width: 20px;
-                height: 20px;
-                border-radius: 50%;
-                border: 2.5px solid rgba(var(--accent-rgb), 0.22);
-                border-top-color: var(--accent);
-                box-shadow: 0 0 9px rgba(var(--accent-rgb), 0.5);
-            }
-            #ptr.spin .ptr-ring {
-                animation: crefspin 0.7s linear infinite;
-            }
-            @keyframes crefspin {
-                to {
-                    transform: rotate(360deg);
-                }
-            }
-            @media (prefers-reduced-motion: reduce) {
-                #ptr.spin .ptr-ring {
-                    animation-duration: 1.1s;
-                }
-            }
-
-            /* ── 정보성 토스트 — 에디터 .nm-toast 정본 셸(위치·말줄임·유령 탭 차단·자동닫힘) ×
-               색 = 에디터 .mini 초록 변형(홈 라임 가족 · 홈은 정보성 단일 변형만).
-               소비처 = 오프라인 폴백 알림 · SW 새 버전 안내(탭 = hardReload) ── */
-            .nm-toast {
-                position: fixed;
-                left: 0;
-                right: 0;
-                margin-inline: auto;
-                bottom: calc(24px + env(safe-area-inset-bottom));
-                transform: translateY(18px);
-                z-index: var(--z-float);
-                width: min(92vw, 430px);
-                display: flex;
-                align-items: center;
-                gap: 9px;
-                padding: 11px 15px;
-                cursor: pointer;
-                background: linear-gradient(
-                    135deg,
-                    rgba(13, 40, 18, 0.95),
-                    rgba(9, 20, 12, 0.95)
-                );
-                border: 1px solid rgba(var(--accent-rgb), 0.45);
-                border-radius: var(--r-m);
-                box-shadow:
-                    0 12px 34px rgba(0, 0, 0, 0.5),
-                    0 0 16px rgba(var(--accent-rgb), 0.18);
-                color: var(--fg);
-                font-size: var(--fs-sm);
-                font-weight: var(--fw-b);
-                line-height: 1.35;
-                backdrop-filter: blur(var(--blur-m)) saturate(1.3);
-                -webkit-backdrop-filter: blur(var(--blur-m)) saturate(1.3);
-                opacity: 0;
-                transition:
-                    opacity 0.3s,
-                    transform 0.3s;
-            }
-            .nm-toast.show {
-                opacity: 1;
-                transform: translateY(0);
-            }
-            .nm-toast:not(.show) {
-                pointer-events: none; /* 유령 토스트 탭 먹힘 차단(에디터 실측 픽스 계승) */
-            }
-            .nm-toast .tg {
-                flex: none;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-                color: var(--accent);
-            }
-            .nm-toast .tg svg {
-                display: block;
-            }
-            .nm-toast .ft-msg {
-                flex: 1;
-                min-width: 0;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis; /* 두 줄 금지 = 첫 줄 말줄임(에디터 정본) */
-            }
+            /* (PTR·토스트 CSS는 아래 is:global 블록 — JS 생성 요소(#ptr·#nmToast)와
+               html.ptr-on엔 Astro 스코프 클래스가 안 붙어 스코프 스타일이 무효라서 전역 필수 · 260729 실측) */
 
             @media (prefers-reduced-motion: reduce) {
-                .nm-toast {
-                    transition: opacity 0.15s;
-                }
                 .news-card {
                     animation: none;
                 }
@@ -1252,6 +1135,131 @@ function ageClass(iso: string | null): string {
                     box-shadow:
                         0 0 20px rgba(var(--accent-rgb), 0.15),
                         inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+                }
+            }
+        </style>
+        <style is:global>
+            /* ══ 전역 스타일 — JS가 만드는 요소(#ptr·#nmToast)와 html 클래스는 Astro 스코프
+               클래스가 안 붙으므로 반드시 전역(260729 실측: 스코프 블록에 두면 완전 무효) ══ */
+
+            /* ── 당겨서 새로고침 = 커스텀 링(에디터 정본 1:1 — 네이티브 링 끄고 직접 그림 ·
+               링 색 = --accent 고정 · 스피너 = .cref-ld-sp 문법 계승) ── */
+            html.ptr-on {
+                overscroll-behavior-y: contain; /* 터치기기(JS가 부여)에서만 네이티브 당김 차단 */
+            }
+            #ptr {
+                position: fixed;
+                top: max(8px, env(safe-area-inset-top));
+                left: 50%;
+                z-index: var(--z-toast);
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                display: grid;
+                place-items: center;
+                background: var(--glass2);
+                border: 1px solid var(--line);
+                -webkit-backdrop-filter: blur(var(--blur-s));
+                backdrop-filter: blur(var(--blur-s));
+                box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+                transform: translate(-50%, -54px) scale(0.9);
+                opacity: 0;
+                pointer-events: none;
+            }
+            #ptr.show {
+                opacity: 1;
+            }
+            #ptr.armed {
+                box-shadow:
+                    0 6px 22px rgba(0, 0, 0, 0.5),
+                    0 0 16px rgba(var(--accent-rgb), 0.45);
+            }
+            #ptr .ptr-ring {
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                border: 2.5px solid rgba(var(--accent-rgb), 0.22);
+                border-top-color: var(--accent);
+                box-shadow: 0 0 9px rgba(var(--accent-rgb), 0.5);
+            }
+            #ptr.spin .ptr-ring {
+                animation: crefspin 0.7s linear infinite;
+            }
+            @keyframes crefspin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* ── 정보성 토스트 — 에디터 .nm-toast 정본 셸(위치·말줄임·유령 탭 차단·자동닫힘) ×
+               색 = 에디터 .mini 초록 변형(홈 라임 가족 · 홈은 정보성 단일 변형만).
+               소비처 = 오프라인 폴백 알림 · SW 새 버전 안내(탭 = hardReload) ── */
+            .nm-toast {
+                position: fixed;
+                left: 0;
+                right: 0;
+                margin-inline: auto;
+                bottom: calc(24px + env(safe-area-inset-bottom));
+                transform: translateY(18px);
+                z-index: var(--z-float);
+                width: min(92vw, 430px);
+                display: flex;
+                align-items: center;
+                gap: 9px;
+                padding: 11px 15px;
+                cursor: pointer;
+                background: linear-gradient(
+                    135deg,
+                    rgba(13, 40, 18, 0.95),
+                    rgba(9, 20, 12, 0.95)
+                );
+                border: 1px solid rgba(var(--accent-rgb), 0.45);
+                border-radius: var(--r-m);
+                box-shadow:
+                    0 12px 34px rgba(0, 0, 0, 0.5),
+                    0 0 16px rgba(var(--accent-rgb), 0.18);
+                color: var(--fg);
+                font-size: var(--fs-sm);
+                font-weight: var(--fw-b);
+                line-height: 1.35;
+                backdrop-filter: blur(var(--blur-m)) saturate(1.3);
+                -webkit-backdrop-filter: blur(var(--blur-m)) saturate(1.3);
+                opacity: 0;
+                transition:
+                    opacity 0.3s,
+                    transform 0.3s;
+            }
+            .nm-toast.show {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            .nm-toast:not(.show) {
+                pointer-events: none; /* 유령 토스트 탭 먹힘 차단(에디터 실측 픽스 계승) */
+            }
+            .nm-toast .tg {
+                flex: none;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--accent);
+            }
+            .nm-toast .tg svg {
+                display: block;
+            }
+            .nm-toast .ft-msg {
+                flex: 1;
+                min-width: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis; /* 두 줄 금지 = 첫 줄 말줄임(에디터 정본) */
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                #ptr.spin .ptr-ring {
+                    animation-duration: 1.1s;
+                }
+                .nm-toast {
+                    transition: opacity 0.15s;
                 }
             }
         </style>
