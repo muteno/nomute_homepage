@@ -273,6 +273,54 @@ function timeAgo(iso: string | null): string {
                     rgba(0, 0, 0, 0.8) 70%,
                     transparent 100%
                 );
+            }
+            /* 프로그레시브 블러 — ref: MengTo progressive-blur.
+               단일 blur(하단 경계 끊김) → 4겹 mask 구간별 점진 blur(안개 페이드).
+               세기 = --blur-s/--blur-m 토큰과 그 분수(calc)만 사용 · 색 없음(순수 블러) */
+            .hdr-blur {
+                position: absolute;
+                inset: 0;
+                z-index: -1;
+                pointer-events: none;
+            }
+            .hdr-blur i {
+                position: absolute;
+                inset: 0;
+                backdrop-filter: blur(0);
+                -webkit-backdrop-filter: blur(0);
+                transition:
+                    backdrop-filter 0.3s ease,
+                    -webkit-backdrop-filter 0.3s ease;
+            }
+            .hdr-blur i:nth-child(1) {
+                -webkit-mask: linear-gradient(180deg, #000 55%, transparent 90%);
+                mask: linear-gradient(180deg, #000 55%, transparent 90%);
+            }
+            .hdr-blur i:nth-child(2) {
+                -webkit-mask: linear-gradient(180deg, #000 40%, transparent 75%);
+                mask: linear-gradient(180deg, #000 40%, transparent 75%);
+            }
+            .hdr-blur i:nth-child(3) {
+                -webkit-mask: linear-gradient(180deg, #000 25%, transparent 58%);
+                mask: linear-gradient(180deg, #000 25%, transparent 58%);
+            }
+            .hdr-blur i:nth-child(4) {
+                -webkit-mask: linear-gradient(180deg, #000 8%, transparent 40%);
+                mask: linear-gradient(180deg, #000 8%, transparent 40%);
+            }
+            #mobile-header.scrolled .hdr-blur i:nth-child(1) {
+                backdrop-filter: blur(calc(var(--blur-s) / 4));
+                -webkit-backdrop-filter: blur(calc(var(--blur-s) / 4));
+            }
+            #mobile-header.scrolled .hdr-blur i:nth-child(2) {
+                backdrop-filter: blur(calc(var(--blur-s) / 2));
+                -webkit-backdrop-filter: blur(calc(var(--blur-s) / 2));
+            }
+            #mobile-header.scrolled .hdr-blur i:nth-child(3) {
+                backdrop-filter: blur(var(--blur-s));
+                -webkit-backdrop-filter: blur(var(--blur-s));
+            }
+            #mobile-header.scrolled .hdr-blur i:nth-child(4) {
                 backdrop-filter: blur(var(--blur-m));
                 -webkit-backdrop-filter: blur(var(--blur-m));
             }
@@ -326,6 +374,21 @@ function timeAgo(iso: string | null): string {
                 letter-spacing: -1px;
                 text-transform: uppercase;
                 text-wrap: balance;
+            }
+            /* 히어로 단어 리빌 — ref: MengTo staggered-word-reveal(투명+20px 상승 · 단어당 0.07s).
+               값 = 토큰 계승(--ease) · 1회만 재생 · reduced-motion 시 하단 블록에서 정지 */
+            .hero .w {
+                display: inline-block;
+                opacity: 0;
+                transform: translateY(20px);
+                animation: wordUp 0.8s var(--ease) both;
+                animation-delay: calc(var(--wi, 0) * 0.07s);
+            }
+            @keyframes wordUp {
+                to {
+                    opacity: 1;
+                    transform: none;
+                }
             }
             .hero p.sub-copy {
                 font-size: 16px;
@@ -543,6 +606,32 @@ function timeAgo(iso: string | null): string {
             .news-time {
                 font-variant-numeric: tabular-nums;
             }
+            /* 프레시 카드 테두리 점등 — ref: MengTo css-border-gradient.
+               마스크 링 오버레이 방식 = 글래스 배경·backdrop-filter 보존(이중 배경 불가 대안).
+               색 = accent-rgb 기존 알파 사다리(.55/.13)·--line 계승, 신규 hex 없음 */
+            .news-card.fresh::before {
+                content: "";
+                position: absolute;
+                inset: -1px;
+                border-radius: var(--r-l);
+                padding: 1px;
+                background: linear-gradient(
+                    150deg,
+                    rgba(var(--accent-rgb), 0.55),
+                    rgba(var(--accent-rgb), 0.13) 38%,
+                    transparent 70%
+                );
+                -webkit-mask:
+                    linear-gradient(#000 0 0) content-box,
+                    linear-gradient(#000 0 0);
+                -webkit-mask-composite: xor;
+                mask:
+                    linear-gradient(#000 0 0) content-box,
+                    linear-gradient(#000 0 0);
+                mask-composite: exclude;
+                pointer-events: none;
+                z-index: 2;
+            }
             /* 1시간 내 신선 기사 = 강조 점등(에디터 신규 신호 응용) */
             .news-card.fresh .news-time {
                 color: var(--accent);
@@ -651,13 +740,51 @@ function timeAgo(iso: string | null): string {
                 font-size: 16px;
                 letter-spacing: -0.5px;
                 width: 100%;
+                position: relative;
+                overflow: hidden;
+                box-shadow: 0 0 0 rgba(var(--accent-rgb), 0);
                 transition:
                     transform var(--dur-fast) var(--ease),
-                    opacity 0.15s ease;
+                    opacity 0.15s ease,
+                    box-shadow 0.3s var(--ease);
+            }
+            /* 글로우 상태 — ref: MengTo beam-glow-states.
+               알파 = 기존 사다리(.45/.7) 재사용 · 빔 = 백색 하이라이트 스윕 3.2s 주기 */
+            .btn-instagram:hover,
+            .btn-instagram:focus-visible {
+                box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.45);
             }
             .btn-instagram:active {
                 transform: scale(var(--press-l));
                 opacity: 0.9;
+                box-shadow: 0 0 32px rgba(var(--accent-rgb), 0.7);
+            }
+            .btn-instagram::after {
+                content: "";
+                position: absolute;
+                top: 0;
+                bottom: 0;
+                left: -70%;
+                width: 45%;
+                background: linear-gradient(
+                    105deg,
+                    transparent,
+                    rgba(255, 255, 255, 0.35),
+                    transparent
+                );
+                transform: skewX(-18deg);
+                animation: btnBeam 3.2s var(--ease) infinite;
+                pointer-events: none;
+            }
+            @keyframes btnBeam {
+                0%,
+                64% {
+                    left: -70%;
+                }
+                88%,
+                100% {
+                    left: 130%;
+                }
             }
 
             /* (플로팅 더보기 FAB 제거 — 무한 스크롤 자동 로드로 대체 · 운영자 260706
@@ -739,6 +866,15 @@ function timeAgo(iso: string | null): string {
                 }
                 .news-card.fresh .news-time::before,
                 .news-image::before {
+                    animation: none;
+                }
+                /* 신규 모션(리빌·빔 스윕) 정지 — 리빌은 완성 상태로 고정 */
+                .hero .w {
+                    animation: none;
+                    opacity: 1;
+                    transform: none;
+                }
+                .btn-instagram::after {
                     animation: none;
                 }
             }
@@ -1104,6 +1240,9 @@ function timeAgo(iso: string | null): string {
         <div class="mobile-view">
             <div class="mobile-container">
                 <header id="mobile-header">
+                    <div class="hdr-blur" aria-hidden="true">
+                        <i></i><i></i><i></i><i></i>
+                    </div>
                     <img
                         src="/assets/logo.png"
                         alt="No Mute"
@@ -1119,14 +1258,22 @@ function timeAgo(iso: string | null): string {
                 </header>
 
                 <section class="hero">
+                    <!-- 단어 리빌 = MengTo staggered-word-reveal 계승(0.07s 스태거 · 문구·색 불변) -->
                     <h1>
-                        <span class="highlight">Breaking</span><br />The
-                        Silence.<br />Speak the <span class="highlight"
-                            >Truth</span
-                        >.
+                        <span class="w highlight" style="--wi:0">Breaking</span
+                        ><br /><span class="w" style="--wi:1">The</span>
+                        <span class="w" style="--wi:2">Silence.</span><br /><span
+                            class="w"
+                            style="--wi:3">Speak</span
+                        >
+                        <span class="w" style="--wi:4">the</span>
+                        <span class="w" style="--wi:5"
+                            ><span class="highlight">Truth</span>.</span
+                        >
                     </h1>
                     <p class="sub-copy">
-                        불편한 진실을 대면할 <span class="highlight"
+                        <span class="w" style="--wi:6">불편한 진실을 대면할</span>
+                        <span class="w highlight" style="--wi:7"
                             >현명한 당신을 위합니다.</span
                         >
                     </p>
