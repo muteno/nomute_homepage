@@ -360,6 +360,59 @@ function timeAgo(iso: string | null): string {
                 pointer-events: auto;
             }
 
+            /* 헤드라인 티커 — ref: MengTo marquee-loop.
+               토큰만 사용(--fs-sm·--fg-2·--line2·--accent) · 호버 일시정지 · reduced-motion 정지 */
+            .ticker {
+                border-top: 1px solid var(--line2);
+                border-bottom: 1px solid var(--line2);
+                padding: 9px 0;
+                overflow: hidden;
+                -webkit-mask: linear-gradient(
+                    90deg,
+                    transparent,
+                    #000 8%,
+                    #000 92%,
+                    transparent
+                );
+                mask: linear-gradient(
+                    90deg,
+                    transparent,
+                    #000 8%,
+                    #000 92%,
+                    transparent
+                );
+            }
+            .ticker-track {
+                display: inline-flex;
+                white-space: nowrap;
+                animation: tickerLoop 26s linear infinite;
+                will-change: transform;
+            }
+            .ticker:hover .ticker-track {
+                animation-play-state: paused;
+            }
+            .ticker-item {
+                font-size: var(--fs-sm);
+                color: var(--fg-2);
+                padding: 0 18px;
+                display: inline-flex;
+                align-items: center;
+                gap: 18px;
+            }
+            .ticker-item::after {
+                content: "";
+                width: 5px;
+                height: 5px;
+                border-radius: 50%;
+                background: var(--accent);
+                opacity: 0.8;
+            }
+            @keyframes tickerLoop {
+                to {
+                    transform: translateX(-50%);
+                }
+            }
+
             /* Hero */
             .hero {
                 padding: 40px var(--sp-4) 30px;
@@ -868,13 +921,16 @@ function timeAgo(iso: string | null): string {
                 .news-image::before {
                     animation: none;
                 }
-                /* 신규 모션(리빌·빔 스윕) 정지 — 리빌은 완성 상태로 고정 */
+                /* 신규 모션(리빌·빔 스윕·티커) 정지 — 리빌은 완성 상태로 고정 */
                 .hero .w {
                     animation: none;
                     opacity: 1;
                     transform: none;
                 }
                 .btn-instagram::after {
+                    animation: none;
+                }
+                .ticker-track {
                     animation: none;
                 }
             }
@@ -1256,6 +1312,23 @@ function timeAgo(iso: string | null): string {
                     <div id="scroll-progress"></div>
                     <div id="hero-datetime"></div>
                 </header>
+
+                {
+                    /* 헤드라인 티커 — ref: MengTo marquee-loop(복제 트랙 0→-50%·가장자리 마스크).
+                       batch 1 제목만 · 피드 비면 미출력 · 장식성(aria-hidden, 카드가 본 열람 경로) */
+                    cards.filter((c) => c.batch === 1).length > 0 && (
+                        <div class="ticker" aria-hidden="true">
+                            <div class="ticker-track">
+                                {[
+                                    ...cards.filter((c) => c.batch === 1).slice(0, 8),
+                                    ...cards.filter((c) => c.batch === 1).slice(0, 8),
+                                ].map((c) => (
+                                    <span class="ticker-item">{c.title}</span>
+                                ))}
+                            </div>
+                        </div>
+                    )
+                }
 
                 <section class="hero">
                     <!-- 단어 리빌 = MengTo staggered-word-reveal 계승(0.07s 스태거 · 문구·색 불변) -->
