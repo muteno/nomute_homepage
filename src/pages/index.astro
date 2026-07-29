@@ -71,30 +71,41 @@ function timeAgo(iso: string | null): string {
             :root {
                 /* ── 디자인 토큰 = nomute-editor viewer :root 이식(값 복사 스냅샷 · 정본은 에디터 :root) ── */
                 --bg: #020402; /* 홈 브랜드 딥블랙(기존 유지) */
-                --glass: rgba(38, 64, 46, 0.42);
-                --glass2: rgba(14, 26, 18, 0.55);
+                /* 그린 디톡스(운영자 260729 "초록 색감 빼기") — 글래스 중립화 = 에디터 정본 계승:
+                   --glass2 = 에디터 rgba(18,19,22,.55)(뜬 청회색·녹색끼 폐지 정본 260704) ·
+                   구 --glass(녹색 틴트 .42)는 에디터 선례대로 삭제(사용처 = 실크 글래스 raw로 대체) */
+                --glass2: rgba(18, 19, 22, 0.55);
                 --line: rgba(255, 255, 255, 0.08);
                 --line2: rgba(255, 255, 255, 0.06);
                 --accent: #0ffd02;
                 --accent-rgb: 15, 253, 2;
                 --accent-dim: rgba(15, 253, 2, 0.13);
-                --accent-2: #ff9614; /* 앰버(에디터 --accent-2 계승) — 문화 배지 */
+                --accent-2: #ffe13d; /* 골드레몬 = 에디터 260723 "전 웹앱 레몬→골드레몬 일괄 통일" 계승(구 #ff9614 오렌지 = 에디터 퇴장색) */
+                --on-amber: #241c02; /* 앰버·골드레몬 위 글자(에디터 정본 — 구 #1a1205 브라운 대체) */
                 --on-accent: #062108;
                 --fg: #eef7f0;
                 --fg-2: #cfd8d0;
                 --mut: #8fa697;
+                /* 카테고리 6색 = 에디터 :root --cat-* 정본 값 복사(정치=스카이시안·사회=네온민트·
+                   경제=골드레몬·국제=코랄·문화=네온핑크·테크=네온바이올렛) — 배지 라임 단색 탈피 */
+                --cat-pol: #38c6ff;
+                --cat-soc: #2cf5a5;
+                --cat-eco: #ffe13d;
+                --cat-intl: #ff7a6b;
+                --cat-cul: #ff5ec8;
+                --cat-tech: #ac5cff;
                 /* (LEFT/RIGHT 편향 배지 폐지 — 운영자 260703 "의미 없음" → bias 토큰 제거,
                    배지는 카테고리 라벨만: 통신사/종합/경제/오피니언=라임 · 문화=앰버) */
-                /* 뉴스 이미지 플레이스홀더/스켈레톤 그라데(딥그린 계열 · raw 중복 제거·평의회4) */
-                --news-ph-1: #1f251f;
-                --news-ph-2: #0a0e0a;
+                /* 뉴스 이미지 플레이스홀더/스켈레톤 그라데 — 중립화(그린 디톡스 260729):
+                   에디터 중립 정본 rgb(24,25,28)·#121212 계승(구 딥그린 #1f251f/#0a0e0a) */
+                --news-ph-1: #18191c;
+                --news-ph-2: #121212;
                 --bg-rgb: 2, 4, 2;
                 /* 웨이브 배경 전용 딥그린 = --glass의 RGB(38,64,46) 사본(hex·rgb 두 표기) —
                    셰이더 hex 파서·워시 rgba()용 홈 신설 축(에디터 오션 시안·파랑 자리를 브랜드 그린 2톤으로 재배선) */
                 --wave-deep: #26402e;
                 --wave-deep-rgb: 38, 64, 46;
-                /* 반지름 스케일 */
-                --r: 24px;
+                /* 반지름 스케일(--r 24px = 에디터서 폐지된 옛값 — 최외곽 = --r-l 16px 통일 계승 260729) */
                 --r-l: 16px;
                 --r-m: 11px;
                 --r-s: 9px;
@@ -122,15 +133,21 @@ function timeAgo(iso: string | null): string {
                 /* 홈 전용 디스플레이 타이포(마케팅 히어로 — 앱 스케일 밖이라 별도 토큰) */
                 --fs-hero: 46px;
                 --fs-hero-pc: 72px;
-                /* 모션 */
+                /* 모션(--ease-in → --gauge-ease 개명 260729 — 에디터 정본과 같은 값의 딴 이름이라 계승 사슬 복원) */
                 --ease: cubic-bezier(0.2, 0.7, 0.3, 1);
-                --ease-in: cubic-bezier(0.22, 0.61, 0.36, 1);
+                --gauge-ease: cubic-bezier(0.22, 0.61, 0.36, 1);
                 --dur: 0.18s;
                 --dur-fast: 0.12s;
+                /* z-index 레이어(에디터 스케일 계승 — 토스트·PTR 이식분만 우선 등재) */
+                --z-float: 60; /* 하단 정보성 토스트(.nm-toast) */
+                --z-toast: 90; /* 당겨서 새로고침 링(#ptr) */
                 /* 눌림(:active) scale 사다리 — 클수록 덜 줄임(에디터 --press-* 계승) */
+                --press-pico: 0.72; /* 플레이트 없는 픽토그램-온리 = :active svg만 축소(공유·토스트 버튼) */
                 --press-m: 0.9; /* 더보기 FAB(에디터 .bnav-fab 계승·72px) */
                 --press-l: 0.95; /* 큰 버튼·TOP(.totop 형제) */
                 --press-card: 0.99; /* 카드 = 에디터 .card:active 정본(cardIn 시작 .985와 별개·평의회4) */
+                /* 버튼 크기(에디터 구조 토큰 — 토스트 픽토 버튼 소비분) */
+                --btn-xs: 22px;
                 /* 폰트 스택 */
                 --font-en: "LEMONMILK", "Pretendard Variable", sans-serif;
                 --font-kr: "Pretendard Variable", Pretendard, -apple-system,
@@ -491,14 +508,15 @@ function timeAgo(iso: string | null): string {
                 background-color: var(--accent);
             }
             .news-card {
+                /* 실크 글래스 = 에디터 .card 정본 1:1 계승(그라데 .18/.20 · blur 12 · 그림자 한 벌 —
+                   구 녹색 불투명 스택 .42/.55/.6 폐지 = 더 투명·중립 · 그린 디톡스+글래스모피즘 260729) */
                 background: linear-gradient(
-                    150deg,
-                    var(--glass) 0%,
-                    var(--glass2) 58%,
-                    rgba(11, 21, 15, 0.6) 100%
+                    135deg,
+                    rgba(18, 30, 34, 0.18),
+                    rgba(11, 19, 23, 0.2)
                 );
-                backdrop-filter: blur(var(--blur-s));
-                -webkit-backdrop-filter: blur(var(--blur-s));
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
                 border: 1px solid var(--line);
                 border-radius: var(--r-l);
                 overflow: hidden;
@@ -506,14 +524,14 @@ function timeAgo(iso: string | null): string {
                 cursor: pointer;
                 position: relative; /* 스트레치드 링크 앵커 기준(평의회5 C1) */
                 box-shadow:
-                    0 16px 36px rgba(0, 0, 0, 0.32),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    0 8px 22px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
                 transition:
                     transform var(--dur-fast) var(--ease),
                     border-color 0.15s ease,
                     box-shadow 0.15s ease;
                 /* 등장 = 촤르륵 스태거(에디터 cardIn 계승) */
-                animation: cardIn 0.34s var(--ease-in) both;
+                animation: cardIn 0.34s var(--gauge-ease) both;
                 animation-delay: calc(var(--i, 0) * 55ms);
                 content-visibility: auto;
                 contain-intrinsic-size: auto 430px; /* 이미지 카드 실측 근사 — 스크롤 점프 완화(평의회6) */
@@ -528,8 +546,22 @@ function timeAgo(iso: string | null): string {
                     transform: none;
                 }
             }
-            .news-card:hover {
-                border-color: rgba(var(--accent-rgb), 0.3);
+            /* 호버 리프트 = 에디터 정본(포인터 가드 포함 — 터치기기 hover 고착 차단 ·
+               진입만 느리게 .3s·이탈은 base 스냅 · 모피즘 부양 9px) */
+            @media (hover: hover) and (pointer: fine) {
+                .news-card:hover {
+                    border-color: rgba(var(--accent-rgb), 0.45);
+                    transform: translateY(-9px) scale(1.01);
+                    box-shadow:
+                        0 22px 44px rgba(0, 0, 0, 0.42),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+                        0 0 0 1px rgba(var(--accent-rgb), 0.18),
+                        0 0 23px rgba(var(--accent-rgb), 0.16);
+                    transition:
+                        border-color 0.3s ease,
+                        box-shadow 0.3s ease,
+                        transform 0.3s var(--ease);
+                }
             }
             .news-card:active {
                 transform: scale(var(--press-card));
@@ -615,7 +647,7 @@ function timeAgo(iso: string | null): string {
                LEFT/RIGHT 편향 표기는 폐지(운영자 260703). */
             .news-badge.bias-culture {
                 background-color: var(--accent-2);
-                color: #1a1205;
+                color: var(--on-amber);
             }
             .news-content {
                 padding: 28px 20px 20px 20px;
@@ -644,8 +676,8 @@ function timeAgo(iso: string | null): string {
             .news-card:focus-within {
                 border-color: rgba(var(--accent-rgb), 0.55);
                 box-shadow:
-                    0 16px 36px rgba(0, 0, 0, 0.32),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                    0 8px 22px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05),
                     0 0 0 2px rgba(var(--accent-rgb), 0.4);
             }
             /* 배지·이미지 등은 링크 오버레이 아래지만 카드 자체가 링크라 클릭 위임됨 */
@@ -751,10 +783,11 @@ function timeAgo(iso: string | null): string {
             /* Instagram CTA — 글래스 패널 */
             .instagram-cta {
                 margin: 30px 0 40px;
+                /* 실크 글래스 계승(카드와 한 벌 · 그린 틴트 폐지) — 프로스트는 blur-m이 전담 */
                 background: linear-gradient(
-                    160deg,
-                    var(--glass) 0%,
-                    var(--glass2) 100%
+                    135deg,
+                    rgba(18, 30, 34, 0.18),
+                    rgba(11, 19, 23, 0.2)
                 );
                 border: 1px solid rgba(var(--accent-rgb), 0.4);
                 border-radius: var(--r-l);
@@ -763,8 +796,8 @@ function timeAgo(iso: string | null): string {
                 backdrop-filter: blur(var(--blur-m));
                 -webkit-backdrop-filter: blur(var(--blur-m));
                 box-shadow:
-                    0 16px 36px rgba(0, 0, 0, 0.32),
-                    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+                    0 8px 22px rgba(0, 0, 0, 0.3),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.05);
             }
             .instagram-cta h2 {
                 font-family: var(--font-en);
@@ -985,7 +1018,7 @@ function timeAgo(iso: string | null): string {
                     border: 1px solid var(--line);
                     backdrop-filter: blur(var(--blur-l));
                     -webkit-backdrop-filter: blur(var(--blur-l));
-                    border-radius: var(--r);
+                    border-radius: var(--r-l);
                     padding: 40px 60px;
                     display: flex;
                     flex-direction: column;
