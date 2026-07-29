@@ -640,14 +640,20 @@ function ageClass(iso: string | null): string {
                     rgba(2, 4, 2, 0.45) 100%
                 );
             }
+            /* 배지 = 글래스 필 + 카테고리 색글자(에디터 catChip '박스 없는 색글자' 색 문법 ×
+               홈 이미지 오버레이 = 다크 글래스 필 절충 · 그린 디톡스 260729 — 구 라임 솔리드 필 폐지).
+               색 = --cat-* 6색 정본 · 비버킷(종합·오피니언)만 라임 기본 = 강조색 화면당 2~3곳 규약 복귀 */
             .news-badge {
                 position: absolute;
                 bottom: 0;
                 left: 20px;
                 transform: translateY(50%);
                 z-index: 10;
-                background-color: var(--accent);
-                color: var(--on-accent);
+                background: var(--glass2);
+                backdrop-filter: blur(var(--blur-s));
+                -webkit-backdrop-filter: blur(var(--blur-s));
+                border: 1px solid var(--line);
+                color: var(--accent);
                 padding: 4px 10px;
                 font-size: var(--fs-sm);
                 font-family: var(--font-en);
@@ -662,11 +668,23 @@ function ageClass(iso: string | null): string {
                 display: inline-block;
                 margin-bottom: var(--sp-2);
             }
-            /* 배지 색 = 카테고리 라벨만: 통신사·종합·경제·오피니언=라임 accent(기본) · 문화=앰버.
-               LEFT/RIGHT 편향 표기는 폐지(운영자 260703). */
-            .news-badge.bias-culture {
-                background-color: var(--accent-2);
-                color: var(--on-amber);
+            .news-badge.cat-pol {
+                color: var(--cat-pol);
+            }
+            .news-badge.cat-soc {
+                color: var(--cat-soc);
+            }
+            .news-badge.cat-eco {
+                color: var(--cat-eco);
+            }
+            .news-badge.cat-intl {
+                color: var(--cat-intl);
+            }
+            .news-badge.cat-cul {
+                color: var(--cat-cul);
+            }
+            .news-badge.cat-tech {
+                color: var(--cat-tech);
             }
             .news-content {
                 padding: 28px 20px 20px 20px;
@@ -1489,7 +1507,7 @@ function ageClass(iso: string | null): string {
                                                 onerror="this.closest('.news-card').classList.add('imgfail')"
                                             />
                                             <div
-                                                class={`news-badge bias-${card.bias}`}
+                                                class={`news-badge${card.cat ? ` cat-${card.cat}` : ""}`}
                                             >
                                                 {card.badge}
                                             </div>
@@ -1498,7 +1516,7 @@ function ageClass(iso: string | null): string {
                                     <div class="news-content">
                                         {!card.imageUrl && (
                                             <div
-                                                class={`news-badge inline bias-${card.bias}`}
+                                                class={`news-badge inline${card.cat ? ` cat-${card.cat}` : ""}`}
                                             >
                                                 {card.badge}
                                             </div>
