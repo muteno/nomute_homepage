@@ -285,17 +285,23 @@ function ageClass(iso: string | null): string {
                 z-index: 1000;
             }
 
+            /* 헤더 워시 — 검정 판때기가 웨이브 배경 위에 '박스'로 도드라지던 것 해소(운영자 260729):
+               ⓐ 불투명 스택(.98/.7, 96% 컷) → 긴 다단 페이드(밑변까지 서서히 0)
+               ⓑ 높이 96%→150% = 페이드 꼬리를 헤더 밖으로 빼 경계선 자체를 제거
+               가독 확보는 프로그레시브 블러(4겹)가 전담 = 색 워시는 최소만 */
             #mobile-header::before {
                 content: "";
                 position: absolute;
                 top: 0;
                 left: 0;
                 width: 100%;
-                height: 96%;
+                height: 150%;
                 background: linear-gradient(
                     180deg,
-                    rgba(2, 4, 2, 0.98) 40%,
-                    rgba(2, 4, 2, 0.7) 70%,
+                    rgba(2, 4, 2, 0.82) 0%,
+                    rgba(2, 4, 2, 0.62) 30%,
+                    rgba(2, 4, 2, 0.32) 55%,
+                    rgba(2, 4, 2, 0.12) 75%,
                     transparent 100%
                 );
                 z-index: -1;
@@ -309,8 +315,10 @@ function ageClass(iso: string | null): string {
             #mobile-header.scrolled::before {
                 background: linear-gradient(
                     180deg,
-                    rgba(0, 0, 0, 0.98) 40%,
-                    rgba(0, 0, 0, 0.8) 70%,
+                    rgba(0, 0, 0, 0.9) 0%,
+                    rgba(0, 0, 0, 0.72) 30%,
+                    rgba(0, 0, 0, 0.38) 55%,
+                    rgba(0, 0, 0, 0.14) 75%,
                     transparent 100%
                 );
             }
@@ -319,7 +327,7 @@ function ageClass(iso: string | null): string {
                세기 = --blur-s/--blur-m 토큰과 그 분수(calc)만 사용 · 색 없음(순수 블러) */
             .hdr-blur {
                 position: absolute;
-                inset: 0;
+                inset: 0 0 -50% 0; /* 워시(::before 150%)와 같은 하단 꼬리 = 블러도 헤더 밖까지 서서히 소멸 */
                 z-index: -1;
                 pointer-events: none;
             }
@@ -988,9 +996,11 @@ function ageClass(iso: string | null): string {
                 transform: scale(var(--press-l));
             }
 
+            /* 스크롤 게이지 = 로고·카피 라인 '위'(헤더 최상단)로 이동 — 하단 걸침이 콘텐츠 경계와
+               겹쳐 어색하던 것 해소(운영자 260729). safe-area 상단 인셋 위에 붙어 노치와도 무간섭 */
             #scroll-progress {
                 position: absolute;
-                bottom: 0;
+                top: 0;
                 left: 0;
                 height: 2px;
                 width: 0%;
