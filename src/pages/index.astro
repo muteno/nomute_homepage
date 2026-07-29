@@ -6,14 +6,33 @@ import { buildCards } from "../lib/feeds";
 const cards = await buildCards();
 const maxBatch = cards.length ? Math.max(...cards.map((c) => c.batch)) : 1;
 
-// 빌드 시점 초기값 — 클라이언트가 즉시 실시간 갱신(KST 기준 상대시간)
+// 빌드 시점 초기값 — 클라이언트가 즉시 실시간 갱신(pubIso 절대시각 기준)
+// 상대시간 = 에디터 relAge 6단 사다리 정본 이식(<30분 방금 / 30분 전 / N시간 / N일 / N주일 / N개월 ·
+// 9000h sentinel 가드) — 구 3단(방금/시간/일) 폐지 = 정본 정합(운영자 260729 승인 · 클라 사다리와 동문)
+function relAge(h: number): string {
+    if (!isFinite(h) || h < 0 || h >= 9000) return "";
+    const min = h * 60;
+    if (min < 30) return "방금";
+    if (min < 60) return "30분 전";
+    if (h < 24) return Math.floor(h) + "시간 전";
+    const d = Math.floor(h / 24);
+    if (d < 7) return d + "일 전";
+    if (d < 30) return Math.floor(d / 7) + "주일 전";
+    return Math.floor(d / 30) + "개월 전";
+}
+function ageH(iso: string | null): number {
+    if (!iso) return NaN;
+    const t = new Date(iso).getTime();
+    return isNaN(t) ? NaN : (Date.now() - t) / 3600000;
+}
 function timeAgo(iso: string | null): string {
-    if (!iso) return "-";
-    const diffMs = Date.now() - new Date(iso).getTime();
-    const minutes = Math.max(0, Math.floor(diffMs / 60000));
-    if (minutes < 60) return "방금 전";
-    if (minutes < 1440) return Math.floor(minutes / 60) + "시간 전";
-    return Math.floor(minutes / 1440) + "일 전";
+    return relAge(ageH(iso)) || "-";
+}
+// 시간 색 3단 페이드 = 에디터 dlReport 정본(≤6h 라임 / 7~11h 흰 / 12h↑ 회)
+function ageClass(iso: string | null): string {
+    const h = ageH(iso);
+    if (!isFinite(h) || h < 0 || h >= 9000) return "age-old";
+    return h < 7 ? "age-hot" : h < 12 ? "age-mid" : "age-old";
 }
 ---
 
@@ -690,6 +709,18 @@ function timeAgo(iso: string | null): string {
             }
             .news-time {
                 font-variant-numeric: tabular-nums;
+            }
+            /* 시간 색 3단 페이드 = 에디터 dlReport 정본(≤6h 라임 / 7~11h 흰 / 12h↑ 회) —
+               신선도가 피드 훑기만으로 읽힘 · .fresh(1h 내) 점등과 자연 중첩(hot ⊃ fresh) */
+            .news-time.age-hot {
+                color: var(--accent);
+                font-weight: var(--fw-b);
+            }
+            .news-time.age-mid {
+                color: var(--fg);
+            }
+            .news-time.age-old {
+                color: var(--mut);
             }
             /* 프레시 카드 테두리 점등 — ref: MengTo css-border-gradient.
                마스크 링 오버레이 방식 = 글래스 배경·backdrop-filter 보존(이중 배경 불가 대안).
@@ -1484,7 +1515,7 @@ function timeAgo(iso: string | null): string {
                                         <div class="news-meta">
                                             <span>{card.publisher}</span>
                                             <span
-                                                class="news-time"
+                                                class={`news-time ${ageClass(card.pubIso)}`}
                                                 data-pub={card.pubIso ?? ""}
                                             >
                                                 {timeAgo(card.pubIso)}
@@ -1626,7 +1657,19 @@ function timeAgo(iso: string | null): string {
             updateDateTime();
 
             // ── 상대시간 갱신 + 1시간 내 '신선' 점등(가장 최신 N개만·노이즈 억제·평의회5 W5) ──
+            // 사다리·색 페이드 = 에디터 relAge/dlReport 정본(서버 frontmatter와 동문 — 드리프트 차단)
             const FRESH_MAX = 4;
+            function relAgeC(h: number): string {
+                if (!isFinite(h) || h < 0 || h >= 9000) return "";
+                const min = h * 60;
+                if (min < 30) return "방금";
+                if (min < 60) return "30분 전";
+                if (h < 24) return Math.floor(h) + "시간 전";
+                const d = Math.floor(h / 24);
+                if (d < 7) return d + "일 전";
+                if (d < 30) return Math.floor(d / 7) + "주일 전";
+                return Math.floor(d / 30) + "개월 전";
+            }
             function refreshTimes() {
                 const now = Date.now();
                 const rows = Array.from(
@@ -1648,15 +1691,19 @@ function timeAgo(iso: string | null): string {
                         card?.classList.remove("fresh");
                         continue;
                     }
+                    const h = (now - t) / 3600000;
                     const minutes = Math.max(0, Math.floor((now - t) / 60000));
-                    el.textContent =
-                        minutes < 60
-                            ? minutes < 10
-                                ? "방금 전"
-                                : `${minutes}분 전`
-                            : minutes < 1440
-                              ? `${Math.floor(minutes / 60)}시간 전`
-                              : `${Math.floor(minutes / 1440)}일 전`;
+                    el.textContent = relAgeC(h) || "-";
+                    el.classList.remove("age-hot", "age-mid", "age-old");
+                    el.classList.add(
+                        !isFinite(h) || h < 0 || h >= 9000
+                            ? "age-old"
+                            : h < 7
+                              ? "age-hot"
+                              : h < 12
+                                ? "age-mid"
+                                : "age-old",
+                    );
                     card?.classList.remove("fresh");
                     if (minutes < 60 && card)
                         freshCandidates.push({ el, min: minutes });
