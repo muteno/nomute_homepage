@@ -18,3 +18,5 @@
 ## 【바인딩】 nomute_homepage
 
 - **디자인 정본** = 없음 — 신설·대개편 전엔 반드시 물어본다(임의 신설 금지)
+
+- **[픽셀실측] 상비 측정기** = `shared/measure_align.js`(nomute-editor 원본 그대로 이식 · 260731 — 개조 금지 · 갱신 = 원본에서 재복사) — Astro는 빌드 후 산출을 잰다: `npm run build && node shared/measure_align.js index.html <셀렉터…> --root dist` → 기하(픽토Δ·정렬선Δ) 하드 판정(≤0.67) + 광학 잉크Δ 참고 + 십자선 캡처([전후] 증빙). 수동 실행 전용 · 훅 편입 금지.
