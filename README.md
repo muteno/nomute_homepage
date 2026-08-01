@@ -1,58 +1,29 @@
-# Starlight Starter Kit: Basics
+# nomute_homepage
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+노뮤트(nomute) 웹사이트 — Astro + Starlight.
 
-```
-npm create astro@latest -- --template starlight
-```
-
-<!-- ASTRO:REMOVE:START -->
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/withastro/starlight/tree/main/examples/basics)
-[![Open with CodeSandbox](https://assets.codesandbox.io/github/button-edit-lime.svg)](https://codesandbox.io/p/sandbox/github/withastro/starlight/tree/main/examples/basics)
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/withastro/starlight&create_from_path=examples/basics)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwithastro%2Fstarlight%2Ftree%2Fmain%2Fexamples%2Fbasics&project-name=my-starlight-docs&repository-name=my-starlight-docs)
-
-<!-- ASTRO:REMOVE:END -->
-
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
-
-## 🚀 Project Structure
-
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+## 구조
 
 ```
 .
-├── public/
 ├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
+│   ├── pages/index.astro   # 메인 랜딩 페이지 (실질 본체)
+│   ├── drafts/             # 랜딩 시안 버전 (index2 · index3 · index44)
+│   ├── content/docs/       # Starlight 문서 (guides · reference)
+│   ├── lib/                # 공용 로직
+│   └── assets/
+├── public/                 # 정적 에셋 (favicon 등)
 ├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+└── package.json
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+## 명령
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+| 명령 | 동작 |
+| --- | --- |
+| `npm install` | 의존성 설치 |
+| `npm run dev` | 로컬 개발 서버 (`localhost:4321`) |
+| `npm run build` | 프로덕션 빌드 → `./dist/` |
+| `npm run preview` | 빌드 미리보기 |
 
-Static assets, like favicons, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+문서 페이지는 `src/content/docs/` 아래에 `.md`/`.mdx`를 추가하면 파일명 기준으로 라우트가 생긴다(사이드바는 자동 생성).
