@@ -17,6 +17,7 @@
   - 실측(260803): 디자인 표면 = `src/pages/index.astro` — `:root` 실블록 **2개**(94행 본체 · 182행 `prefers-reduced-motion`). `src/drafts/` 3파일은 `--bg-base` 계열의 **다른 토큰 체계** = 게이트 대상 삼기 전 제외 범위부터 확정할 것.
 - **디자인 제안·시안·튜닝** = `docs/플레이그라운드_포터블.md` — 만지는 플레이그라운드식 HTML(정적 이미지·텍스트 나열 갈음 금지), 산출 = `docs/reports/`.
 - **레포 구조** = Astro + Starlight. 소스 = `src/`, 배포 산출 = `dist/`(git 미추적). 소스 게이트와 산출물 게이트는 다른 물건이다.
+- **뷰포트 폭 감사(UI 변경 후 권장)** = `scripts/viewport_audit.js` (`npm run build && npm run audit:viewport`) — 미디어쿼리·컨테이너 max-width 실측 + **구간 중점** 폭 사다리로 실렌더해 가로 오버플로(하드)·세로 단차(참고)를 잡는다. 신설 사유(260805): 헤더 그라데이션 좌우 절단이 **480~768px 구간에서만** 보여 폰·PC 양쪽 눈을 통과했다 — 결함은 브레이크포인트 경계가 아니라 구간 한가운데에 산다. **수동 실행 전용**(훅·pre-commit·크론 편입 금지 = 삭제된 measure_align.js 헤더 규율·훅킷 「루틴 임의 부착 금지」 동축). 산출 = `docs/reports/{yymmdd}_뷰포트감사.html` = **기계산출물(손편집 금지)** · 보고서 디자인 = `docs/reports/260702_홈페이지_UIUX개선.html` CSS 계승.
 - **되돌린 이식(재도입 금지 — 운영자 지시)** = 픽셀실측 측정기 shared/measure_align.js(**현재 미실존 — 오인 방지**)는 260731 이식됐다가 `bcad8d6`에서 **운영자 지시로 삭제**됐다. 재이식은 운영자 승인 없이 하지 않는다.
 
 > ⚠️ SYNC 상태: 이 레포는 `muteno/nomute-editor`의 claude-sync 전파 대상 5곳 중 하나다(`claude-sync.yml` TARGETS).

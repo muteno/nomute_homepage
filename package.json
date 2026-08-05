@@ -8,7 +8,8 @@
     "start": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "audit:viewport": "node scripts/viewport_audit.js"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.37.0",
@@ -19,5 +20,8 @@
     "@astrojs/sitemap": "3.2.1",
     "zod": "3.23.8",
     "zod-to-json-schema": "3.23.5"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.62.1"
   }
 }
