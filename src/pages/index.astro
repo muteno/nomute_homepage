@@ -259,6 +259,9 @@ function ageClass(iso: string | null): string {
                 flex-direction: column;
                 width: 100%;
                 min-height: 100vh;
+                /* 헤더 워시·블러의 풀블리드(100vw)가 스크롤바 폭만큼 넘칠 때 가로 스크롤 차단.
+                   clip = 스크롤 컨테이너를 안 만들어 sticky 헤더 보존(hidden은 sticky 깨짐) */
+                overflow-x: clip;
             }
 
             /* ======== MOBILE ======== */
@@ -288,13 +291,17 @@ function ageClass(iso: string | null): string {
             /* 헤더 워시 — 검정 판때기가 웨이브 배경 위에 '박스'로 도드라지던 것 해소(운영자 260729):
                ⓐ 불투명 스택(.98/.7, 96% 컷) → 긴 다단 페이드(밑변까지 서서히 0)
                ⓑ 높이 96%→150% = 페이드 꼬리를 헤더 밖으로 빼 경계선 자체를 제거
+               ⓒ 폭 = 풀블리드 100vw(운영자 260805 "그라데이션이 좌우로 잘림") — 워시는 480px
+                  콘텐츠 기둥에 갇혀 480~768px 구간에서 좌우 수직 절단선이 드러났다. 아래 좌우
+                  꼬리와 같은 축: 페이드가 화면 밖에서 끝나야 경계선이 안 생긴다(콘텐츠는 기둥 유지)
                가독 확보는 프로그레시브 블러(4겹)가 전담 = 색 워시는 최소만 */
             #mobile-header::before {
                 content: "";
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
+                width: 100vw;
+                margin-left: calc(50% - 50vw); /* 컨테이너 중심 기준 풀블리드(<480px = 0 · 기존과 동일) */
                 height: 150%;
                 background: linear-gradient(
                     180deg,
@@ -327,7 +334,9 @@ function ageClass(iso: string | null): string {
                세기 = --blur-s/--blur-m 토큰과 그 분수(calc)만 사용 · 색 없음(순수 블러) */
             .hdr-blur {
                 position: absolute;
-                inset: 0 0 -50% 0; /* 워시(::before 150%)와 같은 하단 꼬리 = 블러도 헤더 밖까지 서서히 소멸 */
+                inset: 0 auto -50% 0; /* 워시(::before 150%)와 같은 하단 꼬리 = 블러도 헤더 밖까지 서서히 소멸 (right=auto = 아래 width와 과제약 회피) */
+                width: 100vw;
+                margin-left: calc(50% - 50vw); /* 워시와 같은 풀블리드 = 블러 경계도 좌우 절단 없음 */
                 z-index: -1;
                 pointer-events: none;
             }
@@ -1607,7 +1616,8 @@ function ageClass(iso: string | null): string {
                     </p>
                     <a href="mailto:contact@nomute.kr" class="hero-contact">
                         <b>Contact</b><br />
-                        <span>Mail: <i>contact@nomute.kr</i></span>
+                        <!-- "Mail:" 라벨 제거 = 주소만(운영자 260805) · 색 = 기존 .highlight(--accent) 재사용 -->
+                        <span class="highlight">contact@nomute.kr</span>
                     </a>
                 </section>
 
